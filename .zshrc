@@ -17,7 +17,7 @@ function mkcd() {
 }
 
 function udirs() { 
-  dirs | tr " " "\n" | sort | uniq | awk '{ print NR, $0 }'
+  dirs -l | tr " " "\n" | sort | uniq | awk '{ print NR, $0 }'
 }
 function dvcd() {
 	cd $(udirs | head -n"$1" | tail -n1 | xargs | cut -d" " -f2)
