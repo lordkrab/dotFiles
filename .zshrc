@@ -8,6 +8,9 @@ function scopedfzf() {
 defaults write -g InitialKeyRepeat -int 10 # normal minimum is 15 (225 ms)
 defaults write -g KeyRepeat -int 2 # normal minimum is 2 (30 ms)
 
+function createCodeCov() {
+	go test ./... -coverprofile=cover.out && go tool cover -html=cover.out
+}
 alias 'la'='ls -al'
 alias 'cd'='pushd > /dev/null'
 alias '..'='cd ..'
@@ -30,19 +33,15 @@ function serve() {
   python3 -m http.server
 }
 
-function goToPackageRoot() {
-	originalPwd=`pwd`
+function g() {
+  cd $(git rev-parse --show-toplevel)
+}
 
-        for i in {1..20}; do
-                if [[ `git status 2>&1` == *"not a git repository"* ]]; then
-                        cd -
-			return
-                fi
-                cd ..
-        done
-	
-	echo "seems you're not in a workspace."
-	cd $originalPwd
+function syncPos {
+  currentDir=$(pwd)
+  cd ~/workplace/pos && git pull
+  cd ~/workplace/pos-backend && git pull
+  cd $currentDir
 }
 
 # Plugins
@@ -60,6 +59,10 @@ autoload -Uz compinit && compinit
 
 # ignore case in autocompletion
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
+
+#	  brew install zsh-vi-mode
+source /usr/local/opt/zsh-vi-mode/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh
+zvm_after_init_commands+=('[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh')
 
 # 	  brew install fzf
 eval "$(fzf --zsh)"
@@ -190,3 +193,8 @@ setopt hist_ignore_space      # ignore commands that start with space
 setopt hist_verify            # show command with history expansion to user before running it
 setopt share_history          # share command history data
 
+export PATH="$PATH:/Users/jakobberg/workplace/flutter/bin"
+export PATH="$PATH:$(go env GOPATH)/bin"
+x=$(echo $PATH | tr ":" "\n" | sort | uniq | tr "\n" ":")
+export PATH="${x::-1}"
+unset x
