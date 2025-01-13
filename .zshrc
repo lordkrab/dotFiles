@@ -3,7 +3,7 @@ function scopedfzf() {
 }
 
 function countLoc() {
-	git ls-files | xargs wc -l | awk '{total += $1} END {print total}'
+	git ls-files | xargs wc -l | tail -n1 | awk '{print $1}'
 }
 
 j() {
@@ -143,10 +143,6 @@ autoload -Uz compinit && compinit
 # ignore case in autocompletion
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
 
-#	  brew install zsh-vi-mode
-source /usr/local/opt/zsh-vi-mode/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh
-zvm_after_init_commands+=('[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh')
-
 # 	  brew install fzf
 eval "$(fzf --zsh)"
 
@@ -161,9 +157,6 @@ source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zs
 
 # Global Settings
 # -----------------------------------------------------------------------------
-export EDITOR=vi
-export VISUAL=vi
-set -o vi mode
 alias grep='grep --color=auto'
 
 # Mac Settings
@@ -219,10 +212,56 @@ current_venv() {
   fi
 }
 
+## Simone Vim
+bindkey -v
+bindkey -M vicmd ':' undefined-key
+function delete-line-and-exit-cmd {
+    zle kill-whole-line
+    zle vi-insert
+}
+bindkey -M vicmd '^U' delete-line-and-exit-cmd
+
 setopt PROMPT_SUBST
-PROMPT='
-(%*) %n@%m $(current_venv)%B%~%b$(parse_git_branch)
+
+# Vim Binds Prompt
+DEFAULT_PROMPT='(%*) %n@%m %{%}%F{#FFFFFF}%B%c%B%F{#CDD6F3}%{%}$(parse_git_branch)
  %F{red}➜%f '
+PROMPT=$DEFAULT_PROMPT
+
+# Change cursor shape for different vi modes.
+function zle-keymap-select {
+    if [[ $KEYMAP == vicmd ]]; then
+        echo -ne '\e[1 q' # Use beam shape cursor
+    else
+        echo -ne '\e[5 q' # Use block shape cursor
+    fi
+}
+
+function zle-line-finish {
+    echo -ne '\e[5 q'  # Use block shape cursor
+}
+
+# Initialize cursor shape
+echo -ne '\e[5 q'
+
+zle -N zle-keymap-select
+zle -N zle-line-finish
+
+# Fix
+bindkey -M viins '^I' fzf-completion
+bindkey '^A' beginning-of-line
+bindkey '^E' end-of-line
+bindkey '^F' forward-char
+bindkey '^B' backward-char
+bindkey '^D' delete-char
+bindkey '^H' backward-delete-char
+bindkey '^K' kill-line
+bindkey '^U' backward-kill-line
+bindkey '^W' backward-kill-word
+bindkey '^Y' yank
+bindkey '^P' up-line-or-history
+bindkey '^N' down-line-or-history
+bindkey '^L' clear-screen
 
 # History (From https://github.com/ohmyzsh/ohmyzsh/blob/master/lib/history.zsh)
 # -----------------------------------------------------------------------------
