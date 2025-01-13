@@ -263,6 +263,31 @@ bindkey '^P' up-line-or-history
 bindkey '^N' down-line-or-history
 bindkey '^L' clear-screen
 
+# Text object support for quotes, brackets, etc. (ci", vi", va", etc)
+autoload -U select-quoted select-bracketed
+zle -N select-quoted
+zle -N select-bracketed
+
+# Enable support for different quote types
+for m in visual viopp; do
+    for c in {a,i}{\',\",\`}; do
+        bindkey -M $m $c select-quoted
+    done
+    for c in {a,i}${(s..)^:-'()[]{}<>bB'}; do
+        bindkey -M $m $c select-bracketed
+    done
+done
+
+# Enable surround-style operations
+autoload -Uz surround
+zle -N delete-surround surround
+zle -N add-surround surround
+zle -N change-surround surround
+bindkey -a cs change-surround
+bindkey -a ds delete-surround
+bindkey -a ys add-surround
+bindkey -M visual S add-surround
+
 # History (From https://github.com/ohmyzsh/ohmyzsh/blob/master/lib/history.zsh)
 # -----------------------------------------------------------------------------
 
