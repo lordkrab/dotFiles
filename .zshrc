@@ -1,32 +1,115 @@
-function fzfcode() { code $(fzf --query '!^build/ ') }
-
 function scopedfzf() {
 	find . -maxdepth $1 2>&1 | grep -v 'Operation not permitted' | fzf
 }
 
-## After entering these, you need to log out and log back in. On OSX, these make your keys get entered much faster!
+function countLoc() {
+	git ls-files | xargs wc -l | awk '{total += $1} END {print total}'
+}
+
+j() {
+    local selected_dir
+    selected_dir=$(find . 2>/dev/null | fzf --height 40% --reverse --border)
+    if [[ -n "$selected_dir" ]]; then
+        cd "$selected_dir"
+    fi
+}
+
+jp() {
+    local selected_dir
+    selected_dir=$(dirs -pl | sort | uniq | fzf --height 40% --reverse --border)
+    if [[ -n "$selected_dir" ]]; then
+        cd "$selected_dir"
+    fi
+}
+
+jc () {
+        if [[ -n "$1" ]]; then
+                cursor "$1"
+                return
+        fi
+
+        local selected_file
+        selected_file=$(find . -type f 2>/dev/null | fzf --height 40% --reverse --border)
+        if [[ -n "$selected_file" ]]
+        then
+                cursor "$selected_file"
+                print -s "jc $selected_file"
+        fi
+}
+
+js ()  {
+        if [[ -n "$1" ]]; then
+                cursor -g "$1"
+                return
+        fi
+
+        local selected_file
+        selected_file=$(git grep -Ein ".*" | fzf)
+        if [ -n "$selected_file" ]; then
+            file=$(echo "$selected_file" | cut -d ":" -f1)
+            line=$(echo "$selected_file" | cut -d ":" -f2)
+            if [ -f "$file" ]; then
+                cursor -g "$file:$line"
+                print -s "js $file:$line"
+            fi
+        fi
+}
+
+# tmux
+if [ -z "$TMUX" ]; then
+    tmux attach-session -t default || tmux new-session -s default
+fi
+
+# After entering these, you need to log out and log back in. On OSX, these make your keys get entered much faster!
 defaults write -g InitialKeyRepeat -int 10 # normal minimum is 15 (225 ms)
 defaults write -g KeyRepeat -int 2 # normal minimum is 2 (30 ms)
+
+## Kills the dock
+defaults write com.apple.dock autohide -bool true
+defaults write com.apple.dock autohide-delay -float 1000
+defaults write com.apple.dock autohide-time-modifier -float 0
+killall Dock
+
+## Make dock normal
+#defaults delete com.apple.dock autohide
+#defaults delete com.apple.dock autohide-delay
+#defaults delete com.apple.dock autohide-time-modifier
+#killall Dock
 
 function createCodeCov() {
 	go test ./... -coverprofile=cover.out && go tool cover -html=cover.out
 }
+alias 'clear'='clear && tmux clear-history'
 alias 'la'='ls -al'
 alias 'cd'='pushd > /dev/null'
 alias '..'='cd ..'
 alias '~'='cd ~'
+
+# git aliases
+alias ga='git add'
+alias gaa='git add --all'
+alias gs='git status'
+alias gcm='git commit -m'
+alias gc='git commit'
+alias grs='git restore'
+alias grbi='git rebase -i'
+alias gb='git branch'
+alias gco='git checkout'
+alias gcb='git checkout -b'
+alias gd='git diff'
+alias gds='git diff --staged'
+alias gf='git fetch'
+alias gpl='git pull'
+alias gps='git push'
+alias gpo='git push origin'
+alias gm='git merge'
+alias gst='git stash'
+alias gstp='git stash pop'
+alias glog='git log --stat'
+
 function mkcd() {
 	mkdir $1 && cd $1
 }
-
-function udirs() { 
-  dirs -l | tr " " "\n" | sort | uniq | awk '{ print NR, $0 }'
-}
-function dvcd() {
-	cd $(udirs | head -n"$1" | tail -n1 | xargs | cut -d" " -f2)
-}
-
-alias dv="dirs -v"
 
 function serve() {
   echo "serving $(pwd) on http://$(hostname):8000"
@@ -71,10 +154,10 @@ eval "$(fzf --zsh)"
 set rtp+=/opt/homebrew/opt/fzf
 
 #     brew install zsh-autosuggestions
-  source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 
 #     brew install zsh-syntax-highlighting
-  source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
 # Global Settings
 # -----------------------------------------------------------------------------
@@ -82,12 +165,6 @@ export EDITOR=vi
 export VISUAL=vi
 set -o vi mode
 alias grep='grep --color=auto'
-
-# For searching only type script files
-function tgrep() { grep --include ".*\.ts" --exclude ".*\.d\.ts" $@ }
-
-# Make 
-export NODE_OPTIONS="--max-old-space-size=8192"
 
 # Mac Settings
 # -----------------------------------------------------------------------------
@@ -195,6 +272,10 @@ setopt share_history          # share command history data
 
 export PATH="$PATH:/Users/jakobberg/workplace/flutter/bin"
 export PATH="$PATH:$(go env GOPATH)/bin"
+export PATH="$PATH:/Users/jakobberg/workplace/github/scripts"
+
 x=$(echo $PATH | tr ":" "\n" | sort | uniq | tr "\n" ":")
 export PATH="${x::-1}"
+# Ruby needs to go at the start so that it beats the system default ruby
+export PATH="/usr/local/opt/ruby/bin:$PATH"
 unset x
