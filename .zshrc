@@ -228,24 +228,33 @@ DEFAULT_PROMPT='(%*) %n@%m %{%}%F{#FFFFFF}%B%c%B%F{#CDD6F3}%{%}$(parse_git_branc
  %F{red}➜%f '
 PROMPT=$DEFAULT_PROMPT
 
+local cursor_shape_beam='\e[6 q'
+local cursor_shape_block='\e[2 q'
+
 # Change cursor shape for different vi modes.
 function zle-keymap-select {
     if [[ $KEYMAP == vicmd ]]; then
-        echo -ne '\e[1 q' # Use beam shape cursor
+        echo -ne $cursor_shape_block
     else
-        echo -ne '\e[5 q' # Use block shape cursor
+        echo -ne $cursor_shape_beam
     fi
 }
 
 function zle-line-finish {
-    echo -ne '\e[5 q'  # Use block shape cursor
+    echo -ne $cursor_shape_beam
 }
 
 # Initialize cursor shape
-echo -ne '\e[5 q'
+echo -ne $cursor_shape_beam
+
+# Reduce vi mode switching delay (makes it so that zsh checks every 0.01 seconds for a completed key sequence)
+export KEYTIMEOUT=1
 
 zle -N zle-keymap-select
-zle -N zle-line-finish
+
+# Fix backspace in vi insert mode
+bindkey -M viins '^?' backward-delete-char
+bindkey -M viins '^H' backward-delete-char
 
 # Fix
 bindkey -M viins '^I' fzf-completion
