@@ -244,6 +244,9 @@ function zle-line-finish {
     echo -ne $cursor_shape_beam
 }
 
+# Ensure cursor shape is set to beam after command execution
+zle -N zle-line-finish
+
 # Initialize cursor shape
 echo -ne $cursor_shape_beam
 
