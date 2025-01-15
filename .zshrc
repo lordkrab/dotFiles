@@ -37,22 +37,26 @@ jc () {
         fi
 }
 
-js ()  {
-        if [[ -n "$1" ]]; then
-                cursor -g "$1"
-                return
-        fi
+js() {
+    local selected_file
+    local search_term=${1:-".*"}  # Use first argument, default to '.*' if none provided
 
-        local selected_file
-        selected_file=$(git grep -Ein ".*" | fzf)
-        if [ -n "$selected_file" ]; then
-            file=$(echo "$selected_file" | cut -d ":" -f1)
-            line=$(echo "$selected_file" | cut -d ":" -f2)
-            if [ -f "$file" ]; then
-                cursor -g "$file:$line"
-                print -s "js $file:$line"
-            fi
+    local filename_color="\033[1;34m"     # Bold blue
+    local line_number_color="\033[1;32m"  # Bold green
+    local reset_color="\033[0m"           # Reset color
+
+    selected_file=$(git grep -Ein --color=never "$search_term" | \
+        awk -F: -v fnc="$filename_color" -v lnc="$line_number_color" -v rc="$reset_color" \
+        '{if (length($3) > 0) printf "%s%s%s:%s%s%s:%s\n", fnc, $1, rc, lnc, $2, rc, $3}' | fzf --ansi)
+
+    if [ -n "$selected_file" ]; then
+        file=$(echo "$selected_file" | cut -d ":" -f1)
+        line=$(echo "$selected_file" | cut -d ":" -f2)
+
+        if [ -f "$file" ]; then
+            cursor -g "$file:$line"
         fi
+    fi
 }
 
 # tmux
@@ -81,7 +85,6 @@ function createCodeCov() {
 }
 alias 'clear'='clear && tmux clear-history'
 alias 'la'='ls -al'
-alias 'cd'='pushd > /dev/null'
 alias '..'='cd ..'
 alias '~'='cd ~'
 
@@ -155,6 +158,9 @@ source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 #     brew install zsh-syntax-highlighting
 source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
+#     brew install zoxide
+eval "$(zoxide init zsh --cmd cd)"
+
 # Global Settings
 # -----------------------------------------------------------------------------
 alias grep='grep --color=auto'
@@ -224,9 +230,8 @@ bindkey -M vicmd '^U' delete-line-and-exit-cmd
 setopt PROMPT_SUBST
 
 # Vim Binds Prompt
-DEFAULT_PROMPT='(%*) %n@%m %{%}%F{#FFFFFF}%B%c%B%F{#CDD6F3}%{%}$(parse_git_branch)
+PROMPT='(%*) %n@%m %{%}%F{#FFFFFF}%B%~%B%F{#CDD6F3}%{%}$(parse_git_branch)
  %F{red}➜%f '
-PROMPT=$DEFAULT_PROMPT
 
 local cursor_shape_beam='\e[6 q'
 local cursor_shape_block='\e[2 q'
@@ -355,3 +360,17 @@ export PATH="${x::-1}"
 # Ruby needs to go at the start so that it beats the system default ruby
 export PATH="/usr/local/opt/ruby/bin:$PATH"
 unset x
+
+function goToDirsAndReturn() {
+    local original_dir=$(pwd)
+
+    cd ~/workplace/pos || return
+    cd ~/workplace/pos-backend || return
+    cd ~/workplace/github/dotFiles || return
+
+    cd "$original_dir"
+}
+
+# Do this to populate jp command
+goToDirsAndReturn
+
