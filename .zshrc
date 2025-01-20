@@ -242,49 +242,19 @@ fi
 # -----------------------------------------------------------------------------
 
 # Git prompt configuration
-ZSH_THEME_GIT_PROMPT_PREFIX="("
-ZSH_THEME_GIT_PROMPT_SUFFIX=")"
-ZSH_THEME_GIT_PROMPT_CLEAN=""
-ZSH_THEME_GIT_PROMPT_DIRTY=" ✗"
-
-git_prompt_info() {
-    local ref
-    local git_status=""
-    local git_status_bg_file="${ZSH_CACHE_DIR:-$HOME/.cache}/git_status_${PWD//\//_}.txt"
-
-    # Get the current branch name or commit hash
-    if ref=$(command git symbolic-ref --quiet HEAD 2> /dev/null); then
-        ref_name="${ref#refs/heads/}"
-    elif ref=$(command git rev-parse --short HEAD 2> /dev/null); then
-        ref_name="$ref"
-    else
-        return
-    fi
-
-    # Lazy load Git status from a background job
-    if [[ -f $git_status_bg_file ]]; then
-        git_status=$(<"$git_status_bg_file")
-    fi
-
-    # Show branch/commit and status
-    echo "%F{blue}${ZSH_THEME_GIT_PROMPT_PREFIX}%F{red}${ref_name}%F{blue}${ZSH_THEME_GIT_PROMPT_SUFFIX}%F{yellow}${git_status} "
+parse_git_branch() {
+  BRANCH=$(git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
+  if [[ ! "${BRANCH}" == "" ]]; then
+    if [[ $(git status 2> /dev/null | tail -n1) != "nothing to commit, working tree clean" ]]; then
+       STATUS="\e[0;31m✘"
+     else
+       STATUS="\e[0;32m✔"
+     fi
+    printf " \e[0;32m${BRANCH} ${STATUS}"
+  else
+    printf ""
+  fi
 }
-
-check_git_status_async() {
-    {
-        local git_status=""
-
-        if [[ -n $(git status --porcelain 2> /dev/null) ]]; then
-            git_status="$ZSH_THEME_GIT_PROMPT_DIRTY"
-        else
-            git_status="$ZSH_THEME_GIT_PROMPT_CLEAN"
-        fi
-
-        local git_status_bg_file="${ZSH_CACHE_DIR:-$HOME/.cache}/git_status_${PWD//\//_}.txt"
-        echo "$git_status" > "$git_status_bg_file"
-    } &> /dev/null &!
-}
-precmd_functions+=(check_git_status_async)
 
 current_venv() {
   if [[ ! -z "$VIRTUAL_ENV" ]]; then
@@ -305,7 +275,7 @@ bindkey -M vicmd '^U' delete-line-and-exit-cmd
 
 setopt PROMPT_SUBST
 # # Vim Binds Prompt
-PROMPT='(%*) %n@%m %{%}%F{#FFFFFF}%B%~%B%F{#CDD6F3}%{%}$(git_prompt_info)
+PROMPT='(%*) %n@%m %{%}%F{#FFFFFF}%B%~%B%F{#CDD6F3}%{%}$(parse_git_branch)
  %F{red}➜%f '
 
 # Vim Binds Cursor Type
