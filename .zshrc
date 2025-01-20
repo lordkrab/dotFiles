@@ -378,7 +378,17 @@ bindkey -r ^R
 zle -N fzf-file-widget
 bindkey ^K fzf-history-widget
 function cdi_and_accept() {
-    cdi && zle kill-whole-line && zle accept-line
+    # Zle -I and the || case make it so that this behaves just like how history lookup for fuzzy find works.
+
+    zle -I   # Tell zsh this is an interactive command
+    # Store current cursor position
+    local old_cursor=$CURSOR
+    cdi || {
+        # On abort/escape, restore cursor position and redraw the line
+        CURSOR=$old_cursor
+        zle redisplay
+        return 1
+    }
 }
 zle -N cdi_and_accept
 bindkey ^J cdi_and_accept
