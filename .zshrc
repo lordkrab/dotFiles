@@ -1,6 +1,48 @@
-function scopedfzf() {
-	find . -maxdepth $1 2>&1 | grep -v 'Operation not permitted' | fzf
+# History (From https://github.com/ohmyzsh/ohmyzsh/blob/master/lib/history.zsh)
+# -----------------------------------------------------------------------------
+
+# History wrapper
+function omz_history {
+  # parse arguments and remove from $@
+  local clear list stamp
+  zparseopts -E -D c=clear l=list f=stamp E=stamp i=stamp
+
+  if [[ $# -eq 0 ]]; then
+    # if no arguments provided, show full history starting from 1
+    builtin fc $stamp -l 1
+  elif [[ -n "$clear" ]]; then
+    # if -c provided, clobber the history file
+    echo -n >| "$HISTFILE"
+    fc -p "$HISTFILE"
+    echo >&2 History file deleted.
+  else
+    # otherwise, run `fc -l` with a custom format
+    builtin fc $stamp -l "$@"
+  fi
 }
+
+# Timestamp format
+case ${HIST_STAMPS-} in
+  "mm/dd/yyyy") alias history='omz_history -f' ;;
+  "dd.mm.yyyy") alias history='omz_history -E' ;;
+  "yyyy-mm-dd") alias history='omz_history -i' ;;
+  "") alias history='omz_history' ;;
+  *) alias history="omz_history -t '$HIST_STAMPS'" ;;
+esac
+
+## History file configuration
+[ -z "$HISTFILE" ] && HISTFILE="$HOME/.zsh_history"
+[ "$HISTSIZE" -lt 50000 ] && HISTSIZE=50000
+[ "$SAVEHIST" -lt 10000 ] && SAVEHIST=10000
+
+## History command configuration
+setopt appendhistory
+setopt extended_history       # record timestamp of command in HISTFILE
+setopt hist_expire_dups_first # delete duplicates first when HISTFILE size exceeds HISTSIZE
+setopt hist_ignore_dups       # ignore duplicated commands history list
+setopt hist_ignore_space      # ignore commands that start with space
+setopt hist_verify            # show command with history expansion to user before running it
+setopt share_history          # share command history data
 
 function countLoc() {
 	git ls-files | xargs wc -l | tail -n1 | awk '{print $1}'
@@ -9,14 +51,6 @@ function countLoc() {
 j() {
     local selected_dir
     selected_dir=$(find . 2>/dev/null | fzf --height 40% --reverse --border)
-    if [[ -n "$selected_dir" ]]; then
-        cd "$selected_dir"
-    fi
-}
-
-jp() {
-    local selected_dir
-    selected_dir=$(dirs -pl | sort | uniq | fzf --height 40% --reverse --border)
     if [[ -n "$selected_dir" ]]; then
         cd "$selected_dir"
     fi
@@ -37,26 +71,38 @@ jc () {
         fi
 }
 
-js() {
-    local selected_file
-    local search_term=${1:-".*"}  # Use first argument, default to '.*' if none provided
-
-    local filename_color="\033[1;34m"     # Bold blue
-    local line_number_color="\033[1;32m"  # Bold green
-    local reset_color="\033[0m"           # Reset color
-
-    selected_file=$(git grep -Ein --color=never "$search_term" | \
+js () {
+        local selected_file
+        local search_term=${1:-".*"}
+        local filename_color="\033[1;34m"
+        local line_number_color="\033[1;32m"
+        local reset_color="\033[0m"
+        selected_file=$(git grep -Ein --color=never "$search_term" | \
         awk -F: -v fnc="$filename_color" -v lnc="$line_number_color" -v rc="$reset_color" \
-        '{if (length($3) > 0) printf "%s%s%s:%s%s%s:%s\n", fnc, $1, rc, lnc, $2, rc, $3}' | fzf --ansi)
-
-    if [ -n "$selected_file" ]; then
-        file=$(echo "$selected_file" | cut -d ":" -f1)
-        line=$(echo "$selected_file" | cut -d ":" -f2)
-
-        if [ -f "$file" ]; then
-            cursor -g "$file:$line"
+        '{
+            # Store the file and line number
+            file=$1
+            line=$2
+            # Reconstruct the content by joining all remaining fields
+            content=""
+            for (i=3; i<=NF; i++) {
+                if (i>3) content = content ":"
+                content = content $i
+            }
+            # Print if content exists
+            if (length(content) > 0) {
+                printf "%s%s%s:%s%s%s:%s\n", fnc, file, rc, lnc, line, rc, content
+            }
+        }' | fzf --ansi)
+        if [ -n "$selected_file" ]
+        then
+                file=$(echo "$selected_file" | cut -d ":" -f1)
+                line=$(echo "$selected_file" | cut -d ":" -f2)
+                if [ -f "$file" ]
+                then
+                        cursor -g "$file:$line"
+                fi
         fi
-    fi
 }
 
 # tmux
@@ -91,7 +137,7 @@ alias '~'='cd ~'
 # git aliases
 alias ga='git add'
 alias gaa='git add --all'
-alias gs='git status'
+gs() { git status | grep -vE '\(use "git .*?".*?)'; }
 alias gcm='git commit -m'
 alias gc='git commit'
 alias grs='git restore'
@@ -192,23 +238,53 @@ if [[ $(uname) == "Linux" ]]; then
   alias ls='ls --color=auto'
 fi
 
-# Prompt
+# PROMPT
 # -----------------------------------------------------------------------------
-parse_git_branch() {
-  BRANCH=$(git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
 
-  if [[ ! "${BRANCH}" == "" ]]; then
-    if [[ $(git status 2> /dev/null | tail -n1) != "nothing to commit, working tree clean" ]]; then
-      STATUS="\e[0;31m✘"
+# Git prompt configuration
+ZSH_THEME_GIT_PROMPT_PREFIX="("
+ZSH_THEME_GIT_PROMPT_SUFFIX=")"
+ZSH_THEME_GIT_PROMPT_CLEAN=""
+ZSH_THEME_GIT_PROMPT_DIRTY=" ✗"
+
+git_prompt_info() {
+    local ref
+    local git_status=""
+    local git_status_bg_file="${ZSH_CACHE_DIR:-$HOME/.cache}/git_status_${PWD//\//_}.txt"
+
+    # Get the current branch name or commit hash
+    if ref=$(command git symbolic-ref --quiet HEAD 2> /dev/null); then
+        ref_name="${ref#refs/heads/}"
+    elif ref=$(command git rev-parse --short HEAD 2> /dev/null); then
+        ref_name="$ref"
     else
-      STATUS="\e[0;32m✔"
+        return
     fi
 
-    printf " \e[0;32m${BRANCH} ${STATUS}"
-  else
-    printf ""
-  fi
+    # Lazy load Git status from a background job
+    if [[ -f $git_status_bg_file ]]; then
+        git_status=$(<"$git_status_bg_file")
+    fi
+
+    # Show branch/commit and status
+    echo "%F{blue}${ZSH_THEME_GIT_PROMPT_PREFIX}%F{red}${ref_name}%F{blue}${ZSH_THEME_GIT_PROMPT_SUFFIX}%F{yellow}${git_status} "
 }
+
+check_git_status_async() {
+    {
+        local git_status=""
+
+        if [[ -n $(git status --porcelain 2> /dev/null) ]]; then
+            git_status="$ZSH_THEME_GIT_PROMPT_DIRTY"
+        else
+            git_status="$ZSH_THEME_GIT_PROMPT_CLEAN"
+        fi
+
+        local git_status_bg_file="${ZSH_CACHE_DIR:-$HOME/.cache}/git_status_${PWD//\//_}.txt"
+        echo "$git_status" > "$git_status_bg_file"
+    } &> /dev/null &!
+}
+precmd_functions+=(check_git_status_async)
 
 current_venv() {
   if [[ ! -z "$VIRTUAL_ENV" ]]; then
@@ -228,32 +304,25 @@ function delete-line-and-exit-cmd {
 bindkey -M vicmd '^U' delete-line-and-exit-cmd
 
 setopt PROMPT_SUBST
-
-# Vim Binds Prompt
-PROMPT='(%*) %n@%m %{%}%F{#FFFFFF}%B%~%B%F{#CDD6F3}%{%}$(parse_git_branch)
+# # Vim Binds Prompt
+PROMPT='(%*) %n@%m %{%}%F{#FFFFFF}%B%~%B%F{#CDD6F3}%{%}$(git_prompt_info)
  %F{red}➜%f '
 
-local cursor_shape_beam='\e[6 q'
-local cursor_shape_block='\e[2 q'
+# Vim Binds Cursor Type
+function _set_block_cursor() { echo -ne '\e[2 q'; }
+function _set_beam_cursor() { echo -ne '\e[6 q'; }
 
-# Change cursor shape for different vi modes.
 function zle-keymap-select {
     if [[ $KEYMAP == vicmd ]]; then
-        echo -ne $cursor_shape_block
+        _set_block_cursor
     else
-        echo -ne $cursor_shape_beam
+        _set_beam_cursor
     fi
 }
+zle -N zle-keymap-select
 
-function zle-line-finish {
-    echo -ne $cursor_shape_beam
-}
-
-# Ensure cursor shape is set to beam after command execution
-zle -N zle-line-finish
-
-# Initialize cursor shape
-echo -ne $cursor_shape_beam
+preexec_functions+=(_set_block_cursor)
+precmd_functions+=(_set_beam_cursor)
 
 # Reduce vi mode switching delay (makes it so that zsh checks every 0.01 seconds for a completed key sequence)
 export KEYTIMEOUT=1
@@ -305,51 +374,14 @@ bindkey -a ds delete-surround
 bindkey -a ys add-surround
 bindkey -M visual S add-surround
 
-# History (From https://github.com/ohmyzsh/ohmyzsh/blob/master/lib/history.zsh)
-# -----------------------------------------------------------------------------
-
-# History wrapper
-function omz_history {
-  # parse arguments and remove from $@
-  local clear list stamp
-  zparseopts -E -D c=clear l=list f=stamp E=stamp i=stamp
-
-  if [[ $# -eq 0 ]]; then
-    # if no arguments provided, show full history starting from 1
-    builtin fc $stamp -l 1
-  elif [[ -n "$clear" ]]; then
-    # if -c provided, clobber the history file
-    echo -n >| "$HISTFILE"
-    fc -p "$HISTFILE"
-    echo >&2 History file deleted.
-  else
-    # otherwise, run `fc -l` with a custom format
-    builtin fc $stamp -l "$@"
-  fi
+bindkey -r ^R
+zle -N fzf-file-widget
+bindkey ^K fzf-history-widget
+function cdi_and_accept() {
+    cdi && zle kill-whole-line && zle accept-line
 }
-
-# Timestamp format
-case ${HIST_STAMPS-} in
-  "mm/dd/yyyy") alias history='omz_history -f' ;;
-  "dd.mm.yyyy") alias history='omz_history -E' ;;
-  "yyyy-mm-dd") alias history='omz_history -i' ;;
-  "") alias history='omz_history' ;;
-  *) alias history="omz_history -t '$HIST_STAMPS'" ;;
-esac
-
-## History file configuration
-[ -z "$HISTFILE" ] && HISTFILE="$HOME/.zsh_history"
-[ "$HISTSIZE" -lt 50000 ] && HISTSIZE=50000
-[ "$SAVEHIST" -lt 10000 ] && SAVEHIST=10000
-
-## History command configuration
-setopt appendhistory
-setopt extended_history       # record timestamp of command in HISTFILE
-setopt hist_expire_dups_first # delete duplicates first when HISTFILE size exceeds HISTSIZE
-setopt hist_ignore_dups       # ignore duplicated commands history list
-setopt hist_ignore_space      # ignore commands that start with space
-setopt hist_verify            # show command with history expansion to user before running it
-setopt share_history          # share command history data
+zle -N cdi_and_accept
+bindkey ^J cdi_and_accept
 
 export PATH="$PATH:/Users/jakobberg/workplace/flutter/bin"
 export PATH="$PATH:$(go env GOPATH)/bin"
@@ -361,16 +393,7 @@ export PATH="${x::-1}"
 export PATH="/usr/local/opt/ruby/bin:$PATH"
 unset x
 
-function goToDirsAndReturn() {
-    local original_dir=$(pwd)
-
-    cd ~/workplace/pos || return
-    cd ~/workplace/pos-backend || return
-    cd ~/workplace/github/dotFiles || return
-
-    cd "$original_dir"
+function tmuxSourceAll() {
+    tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index}' | xargs -I {} tmux send-keys -t {} 'source ~/.zshrc' Enter
 }
-
-# Do this to populate jp command
-goToDirsAndReturn
 
