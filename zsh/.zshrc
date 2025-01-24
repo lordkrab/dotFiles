@@ -1,3 +1,11 @@
+# -----------
+# To get shortcuts to open apps
+# brew install koekeishiya/formulae/skhd
+# skhd --start-service
+# ~/.config/skhd/skhdrc
+# skhd --restart-service
+# -----------
+
 # History (From https://github.com/ohmyzsh/ohmyzsh/blob/master/lib/history.zsh)
 # -----------------------------------------------------------------------------
 
@@ -71,38 +79,43 @@ jc () {
         fi
 }
 
-js () {
-        local selected_file
-        local search_term=${1:-".*"}
-        local filename_color="\033[1;34m"
-        local line_number_color="\033[1;32m"
-        local reset_color="\033[0m"
-        selected_file=$(git grep -Ein --color=never "$search_term" | \
-        awk -F: -v fnc="$filename_color" -v lnc="$line_number_color" -v rc="$reset_color" \
-        '{
-            # Store the file and line number
-            file=$1
-            line=$2
-            # Reconstruct the content by joining all remaining fields
-            content=""
-            for (i=3; i<=NF; i++) {
-                if (i>3) content = content ":"
-                content = content $i
+# must brew install bat
+js() {
+    local selected_file
+    local search_term=${1:-".*"}  # Use first argument, default to '.*' if none provided
+
+    local filename_color="\033[1;34m"     # Bold blue
+    local line_number_color="\033[1;32m"  # Bold green
+    local reset_color="\033[0m"           # Reset color
+
+    selected_file=$(git grep -Ein --color=never "$search_term" | \
+        awk -F: -v fnc="$filename_color" -v lnc="$line_number_color" -v rc="$reset_color" '{
+            # Combine all fields from the third onward into a single message
+            content = $3
+            for (i = 4; i <= NF; i++) {
+                content = content ":" $i
             }
-            # Print if content exists
+
+            # Print the formatted result if there is content
             if (length(content) > 0) {
-                printf "%s%s%s:%s%s%s:%s\n", fnc, file, rc, lnc, line, rc, content
+                printf "%s%s%s:%s%s%s:%s\n", fnc, $1, rc, lnc, $2, rc, content
             }
-        }' | fzf --ansi)
-        if [ -n "$selected_file" ]
-        then
-                file=$(echo "$selected_file" | cut -d ":" -f1)
-                line=$(echo "$selected_file" | cut -d ":" -f2)
-                if [ -f "$file" ]
-                then
-                        cursor -g "$file:$line"
-                fi
+        }' | fzf --ansi --preview-window=default --preview='
+            file=$(echo {} | cut -d ":" -f1)
+            line=$(echo {} | cut -d ":" -f2)
+            if [ -n "$file" ] && [ -n "$line" ]; then
+                bat --style=numbers,grid --color=always --highlight-line "$line" --line-range "$((line > 10 ? line - 10 : 1)):$((line + 10))" "$file"
+            fi
+        ')
+
+    if [ -n "$selected_file" ]; then
+        file=$(echo "$selected_file" | cut -d ":" -f1)
+        line=$(echo "$selected_file" | cut -d ":" -f2)
+
+        if [ -f "$file" ]; then
+            cursor -g "$file:$line"
         fi
+    fi
 }
 
 # tmux
@@ -129,8 +142,11 @@ killall Dock
 function createCodeCov() {
 	go test ./... -coverprofile=cover.out && go tool cover -html=cover.out
 }
-alias 'clear'='clear && tmux clear-history'
-alias 'la'='ls -al'
+alias 'clear'='echo STOP'
+alias ls='eza --group-directories-first --icons'
+alias ll='eza --group-directories-first --icons -l'
+alias la='eza --group-directories-first --icons -la'
+alias tree='eza --group-directories-first --icons --tree'
 alias '..'='cd ..'
 alias '~'='cd ~'
 
@@ -376,4 +392,5 @@ unset x
 function tmuxSourceAll() {
     tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index}' | xargs -I {} tmux send-keys -t {} 'source ~/.zshrc' Enter
 }
+
 
