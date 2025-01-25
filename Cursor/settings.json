@@ -1,0 +1,52 @@
+{
+    "explorer.confirmDelete": false,
+    "files.exclude": {
+        "**/__pycache__": true
+    },
+    "editor.renderWhitespace": "all",
+    "editor.lineNumbers": "relative",
+    "[dart]": {
+        "editor.formatOnSave": true,
+        // "editor.formatOnType": true,
+        "editor.rulers": [
+            160
+        ],
+        "editor.selectionHighlight": true,
+        "editor.suggestSelection": "first",
+        "editor.tabCompletion": "onlySnippets",
+        "editor.wordBasedSuggestions": "off",
+    },
+    "editor.fontFamily": "MesloLGS Nerd Font Mono, Menlo, Monaco, 'Courier New', monospace",
+    "dart.lineLength": 160,
+    "dart.sdkPath": "/Users/jakobberg/workplace/flutter/bin/cache/dart-sdk",
+    "editor.cursorBlinking": "solid",
+    "dart.flutterSdkPath": "/Users/jakobberg/workplace/flutter",
+    "workbench.settings.applyToAllProfiles": ["editor.formatOnSave"],
+    "go.lintTool": "golangci-lint",
+    "window.zoomLevel": 2,
+    "go.toolsManagement.autoUpdate": true,
+    "window.customTitleBarVisibility": "windowed",
+    "editor.find.autoFindInSelection": "multiline",
+    "editor.minimap.enabled": false,
+    "cursor.cpp.disabledLanguages": [
+        "plaintext",
+        "markdown"
+    ],
+    "git.openRepositoryInParentFolders": "never",
+    "dart.debugExternalPackageLibraries": true,
+    "dart.debugSdkLibraries": true,
+    "vim.history": 1000,
+    "vim.useSystemClipboard": false,
+    "files.trimTrailingWhitespace": true,
+    "vim.normalModeKeyBindings": [
+        {
+            "before": ["<C-d>"],
+            "after": ["<C-d>", "z", "z"]
+        },
+        {
+            "before": ["<C-u>"],
+            "after": ["<C-u>", "z", "z"]
+        }
+    ],
+    "explorer.confirmDragAndDrop": false
+}
