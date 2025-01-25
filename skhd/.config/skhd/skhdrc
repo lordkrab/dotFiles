@@ -4,4 +4,3 @@
 ctrl - s : open -a '/Applications/Cursor.app'
 ctrl - f : open -a '/Applications/Firefox.app'
 ctrl - m : open -a '/Applications/Spotify.app'
-ctrl - i : open -a '/Applications/iTerm.app'
