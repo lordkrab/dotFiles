@@ -88,43 +88,26 @@ js() {
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
-            -v|--vendor)
-                include_vendor=true
-                shift
-                ;;
-            *)
-                search_term="$1"
-                shift
-                ;;
+            -v|--vendor) include_vendor=true; shift ;;
+            *) search_term="$1"; shift ;;
         esac
     done
 
     # Set default search term if none provided
     search_term=${search_term:-".*"}
 
-    local filename_color="\033[1;34m"     # Bold blue
-    local line_number_color="\033[1;32m"  # Bold green
-    local reset_color="\033[0m"           # Reset color
+    # Use rg with built-in colors
+    local rg_command="rg --smart-case --line-number --color always \
+        --colors=path:fg:blue --colors=path:style:bold \
+        --colors=line:fg:green --colors=line:style:bold \
+        --colors=match:none"
 
-    # Use rg with smart case, line numbers, and no colors
-    local rg_command="rg --smart-case --line-number --no-heading --color never"
     if [ "$include_vendor" = false ]; then
         rg_command="$rg_command --glob '!vendor/*'"
     fi
 
     selected_file=$(eval "$rg_command \"$search_term\"" | \
-        awk -F: -v fnc="$filename_color" -v lnc="$line_number_color" -v rc="$reset_color" '{
-            # Combine all fields from the third onward into a single message
-            content = $3
-            for (i = 4; i <= NF; i++) {
-                content = content ":" $i
-            }
-
-            # Print the formatted result if there is content
-            if (length(content) > 0) {
-                printf "%s%s%s:%s%s%s:%s\n", fnc, $1, rc, lnc, $2, rc, content
-            }
-        }' | fzf --ansi --preview-window=default --preview='
+        fzf --ansi --preview-window=default --preview='
             file=$(echo {} | cut -d ":" -f1)
             line=$(echo {} | cut -d ":" -f2)
             if [ -n "$file" ] && [ -n "$line" ]; then
@@ -132,11 +115,12 @@ js() {
             fi
         ')
 
-    if [ -n "$selected_file" ]; then
+    if [[ -n "$selected_file" ]]; then
+        local file line
         file=$(echo "$selected_file" | cut -d ":" -f1)
         line=$(echo "$selected_file" | cut -d ":" -f2)
 
-        if [ -f "$file" ]; then
+        if [[ -f "$file" ]]; then
             print -s "cursor -g \"$file:$line\""
             cursor -g "$file:$line"
         fi
