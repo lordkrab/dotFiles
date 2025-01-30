@@ -79,7 +79,7 @@ jc () {
         fi
 }
 
-# must brew install bat
+# must brew install bat rg
 js() {
     local selected_file
     local include_vendor=false
@@ -106,12 +106,13 @@ js() {
     local line_number_color="\033[1;32m"  # Bold green
     local reset_color="\033[0m"           # Reset color
 
-    local files_command="git ls-files"
+    # Use rg with smart case, line numbers, and no colors
+    local rg_command="rg --smart-case --line-number --no-heading --color never"
     if [ "$include_vendor" = false ]; then
-        files_command="$files_command | grep -v '^vendor/'"
+        rg_command="$rg_command --glob '!vendor/*'"
     fi
 
-    selected_file=$(eval "$files_command" | xargs grep -Ein --color=never "$search_term" | \
+    selected_file=$(eval "$rg_command \"$search_term\"" | \
         awk -F: -v fnc="$filename_color" -v lnc="$line_number_color" -v rc="$reset_color" '{
             # Combine all fields from the third onward into a single message
             content = $3
@@ -136,7 +137,6 @@ js() {
         line=$(echo "$selected_file" | cut -d ":" -f2)
 
         if [ -f "$file" ]; then
-            # Print the cursor command before executing it
             print -s "cursor -g \"$file:$line\""
             cursor -g "$file:$line"
         fi
