@@ -82,13 +82,36 @@ jc () {
 # must brew install bat
 js() {
     local selected_file
-    local search_term=${1:-".*"}  # Use first argument, default to '.*' if none provided
+    local include_vendor=false
+    local search_term=""
+
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -v|--vendor)
+                include_vendor=true
+                shift
+                ;;
+            *)
+                search_term="$1"
+                shift
+                ;;
+        esac
+    done
+
+    # Set default search term if none provided
+    search_term=${search_term:-".*"}
 
     local filename_color="\033[1;34m"     # Bold blue
     local line_number_color="\033[1;32m"  # Bold green
     local reset_color="\033[0m"           # Reset color
 
-    selected_file=$(git grep -Ein --color=never "$search_term" | \
+    local files_command="git ls-files"
+    if [ "$include_vendor" = false ]; then
+        files_command="$files_command | grep -v '^vendor/'"
+    fi
+
+    selected_file=$(eval "$files_command" | xargs grep -Ein --color=never "$search_term" | \
         awk -F: -v fnc="$filename_color" -v lnc="$line_number_color" -v rc="$reset_color" '{
             # Combine all fields from the third onward into a single message
             content = $3
@@ -113,6 +136,8 @@ js() {
         line=$(echo "$selected_file" | cut -d ":" -f2)
 
         if [ -f "$file" ]; then
+            # Print the cursor command before executing it
+            print -s "cursor -g \"$file:$line\""
             cursor -g "$file:$line"
         fi
     fi

@@ -48,5 +48,8 @@
             "after": ["<C-u>", "z", "z"]
         }
     ],
+    "search.exclude": {
+        "**/vendor": true,
+    },
     "explorer.confirmDragAndDrop": false
 }
