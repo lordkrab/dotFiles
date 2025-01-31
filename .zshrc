@@ -414,13 +414,3 @@ export FZF_DEFAULT_OPTS="\
 --preview='bat --color=always {}' \
 --preview-window=hidden
 "
-
-# enter tmux copy mode by pressing v in normal mode
-function tmux_copy_mode() {
-    tmux copy-mode
-    zle redisplay
-}
-zle -N tmux_copy_mode
-bindkey -M vicmd 'v' tmux_copy_mode
-
-
