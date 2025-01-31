@@ -359,6 +359,11 @@ for m in visual viopp; do
     done
 done
 
+## Make it so pressing 'vv' in normal mode opens vim
+autoload -U edit-command-line
+zle -N edit-command-line
+bindkey -M vicmd "v" edit-command-line
+
 # Enable surround-style operations
 autoload -Uz surround
 zle -N delete-surround surround
