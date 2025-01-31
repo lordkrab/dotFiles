@@ -134,7 +134,7 @@ fi
 
 # After entering these, you need to log out and log back in. On OSX, these make your keys get entered much faster!
 defaults write -g InitialKeyRepeat -int 10 # normal minimum is 15 (225 ms)
-defaults write -g KeyRepeat -int 2 # normal minimum is 2 (30 ms)
+defaults write -g KeyRepeat -int 1 # normal minimum is 2 (30 ms)
 
 ## Kills the dock
 defaults write com.apple.dock autohide -bool true
@@ -401,5 +401,13 @@ unset x
 function tmuxSourceAll() {
     tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index}' | xargs -I {} tmux send-keys -t {} 'source ~/.zshrc' Enter
 }
+
+export FZF_DEFAULT_OPTS="\
+--ansi \
+--multi \
+--bind='ctrl-j:down,ctrl-k:up,ctrl-d:half-page-down,ctrl-u:half-page-up,ctrl-f:toggle+clear-query+first,ctrl-q:clear-query+clear-selection+first,ctrl-s:toggle-preview' \
+--preview='bat --color=always {}' \
+--preview-window=hidden
+"
 
 
