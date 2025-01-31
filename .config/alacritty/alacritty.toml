@@ -1,0 +1,22 @@
+general.import = [
+    "~/.config/alacritty/themes/catppuccin-mocha.toml"
+]
+
+[env]
+TERM = "xterm-256color"
+
+[window]
+padding.x = 10
+padding.y = 10
+
+opacity = 0.9
+blur = false
+
+decorations = "Buttonless"
+
+[scrolling]
+history = 100000
+
+[font]
+normal.family = "MesloLGS Nerd Font Mono"
+size = 16
