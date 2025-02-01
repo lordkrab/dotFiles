@@ -38,6 +38,28 @@
     "vim.history": 1000,
     "vim.useSystemClipboard": false,
     "files.trimTrailingWhitespace": true,
+    // This causes vim to use the vscode undo/redo commands rather than the built in vim undo and redo.
+    "vim.normalModeKeyBindingsNonRecursive": [
+        {
+            "before": ["u"],
+            "after": [],
+            "commands": [
+                {
+                    "command": "undo"
+                }
+            ]
+        },
+        {
+            "before": ["<C-r>"],
+            "after": [],
+            "commands": [
+                {
+                    "command": "redo"
+                }
+            ]
+        }
+    ],
+    // Center the screen after ctrl d and ctrl u.
     "vim.normalModeKeyBindings": [
         {
             "before": ["<C-d>"],
@@ -51,5 +73,19 @@
     "search.exclude": {
         "**/vendor": true,
     },
-    "explorer.confirmDragAndDrop": false
+    "explorer.confirmDragAndDrop": false,
+    // I added these as an attempt to prevent vscode from flicking my cursor back after searching.
+    "editor.find.seedSearchStringFromSelection": "never",
+    "workbench.editor.restoreViewState": false,
+    // If that does not work, then I can try this:
+    // {
+    //     "key": "cmd+f",  // Use "ctrl+f" for Windows/Linux
+    //     "command": "actions.find",
+    //     "args": {
+    //         "preventScroll": true
+    //     }
+    // }
+    "editor.tokenColorCustomizations": {
+        "comments": "#1ed843" // You can use any hex color code you prefer
+    }
 }

@@ -1,6 +1,6 @@
 # https://github.com/koekeishiya/skhd/
 # ^ See this for more information on how to configure skhd
 
-ctrl - s : open -a '/Applications/Cursor.app'
+# ctrl - s : open -a '/Applications/Cursor.app'
 # ctrl - f : open -a '/Applications/Firefox.app'
 ctrl - m : open -a '/Applications/Spotify.app'
