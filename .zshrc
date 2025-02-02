@@ -108,8 +108,8 @@ js() {
 
     selected_file=$(eval "$rg_command \"$search_term\"" | \
         fzf --ansi --preview-window=default --preview='
-            file=$(echo {} | cut -d ":" -f1)
-            line=$(echo {} | cut -d ":" -f2)
+            file=$(echo {} | cut -d ":" -f1 | head -n1)
+            line=$(echo {} | cut -d ":" -f2 | head -n1)
             if [ -n "$file" ] && [ -n "$line" ]; then
                 bat --style=numbers,grid --color=always --highlight-line "$line" --line-range "$((line > 10 ? line - 10 : 1)):$((line + 10))" "$file"
             fi
@@ -117,8 +117,8 @@ js() {
 
     if [[ -n "$selected_file" ]]; then
         local file line
-        file=$(echo "$selected_file" | cut -d ":" -f1)
-        line=$(echo "$selected_file" | cut -d ":" -f2)
+        file=$(echo "$selected_file" | cut -d ":" -f1 | head -n1)
+        line=$(echo "$selected_file" | cut -d ":" -f2 | head -n1)
 
         if [[ -f "$file" ]]; then
             print -s "cursor -g \"$file:$line\""
@@ -126,11 +126,6 @@ js() {
         fi
     fi
 }
-
-# tmux
-if [ -z "$TMUX" ]; then
-    tmux attach-session -t default || tmux new-session -s default
-fi
 
 # After entering these, you need to log out and log back in. On OSX, these make your keys get entered much faster!
 defaults write -g InitialKeyRepeat -int 10 # normal minimum is 15 (225 ms)
@@ -418,3 +413,7 @@ export FZF_DEFAULT_OPTS="\
 --preview='bat --color=always {}' \
 --preview-window=hidden
 "
+
+if [ -z "$TMUX" ]; then
+    start-tmux.sh
+fi
