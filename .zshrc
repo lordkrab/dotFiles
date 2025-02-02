@@ -263,10 +263,14 @@ if [[ $(uname) == "Linux" ]]; then
   alias ls='ls --color=auto'
 fi
 
+## Colorful man pages:
+man() { LESS_TERMCAP_mb=$'\e[01;31m' LESS_TERMCAP_md=$'\e[01;38;5;220m' LESS_TERMCAP_me=$'\e[0m' LESS_TERMCAP_se=$'\e[0m' LESS_TERMCAP_so=$'\e[38;5;63m' LESS_TERMCAP_ue=$'\e[0m' LESS_TERMCAP_us=$'\e[04;38;5;202m' command man $1 ; }
+
 # PROMPT
 # -----------------------------------------------------------------------------
 
 # Git prompt configuration
+
 parse_git_branch() {
   BRANCH=$(git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
   if [[ ! "${BRANCH}" == "" ]]; then

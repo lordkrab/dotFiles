@@ -75,16 +75,15 @@
     },
     "explorer.confirmDragAndDrop": false,
     // I added these as an attempt to prevent vscode from flicking my cursor back after searching.
-    "editor.find.seedSearchStringFromSelection": "never",
-    "workbench.editor.restoreViewState": false,
+    // THIS FAILED!!!!!!!
+    // "editor.find.seedSearchStringFromSelection": "never",
+    // "workbench.editor.restoreViewState": false,
     // If that does not work, then I can try this:
-    // {
-    //     "key": "cmd+f",  // Use "ctrl+f" for Windows/Linux
-    //     "command": "actions.find",
-    //     "args": {
-    //         "preventScroll": true
-    //     }
-    // }
+    "key": "cmd+f",  // Use "ctrl+f" for Windows/Linux
+    "command": "actions.find",
+    "args": {
+        "preventScroll": true
+    },
     "editor.tokenColorCustomizations": {
         "comments": "#1ed843" // You can use any hex color code you prefer
     }
