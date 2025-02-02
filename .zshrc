@@ -191,8 +191,8 @@ function g() {
 
 function syncPos {
   currentDir=$(pwd)
-  cd ~/workplace/pos && git pull
-  cd ~/workplace/pos-backend && git pull
+  cd ~/workplace/pos && git pull &
+  cd ~/workplace/pos-backend && git pull &
   cd $currentDir
 }
 
