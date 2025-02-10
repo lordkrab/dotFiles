@@ -39,6 +39,44 @@
     "vim.useSystemClipboard": false,
     "files.trimTrailingWhitespace": true,
     // This causes vim to use the vscode undo/redo commands rather than the built in vim undo and redo.
+    "vim.normalModeKeyBindings": [
+        {
+            "before": ["<C-d>"],
+            "after": ["<C-d>", "z", "z"]
+        },
+        {
+            "before": ["<C-u>"],
+            "after": ["<C-u>", "z", "z"]
+        },
+        {
+            "before": ["n"],
+            "after": ["n", "z", "z"]
+        },
+        {
+            "before": ["N"],
+            "after": ["N", "z", "z"]
+        },
+        {
+            "before": ["*"],
+            "after": ["*", "z", "z"]
+        },
+        {
+            "before": ["#"],
+            "after": ["#", "z", "z"]
+        },
+        {
+            "before": ["<C-j>"],
+            "after": ["<C-e>"]
+        },
+        {
+            "before": ["<C-k>"],
+            "after": ["<C-y>"]
+        },
+        {
+            "before": ["<leader>", "e"],
+            "commands": ["workbench.files.action.focusFilesExplorer"]
+        }
+    ],
     "vim.normalModeKeyBindingsNonRecursive": [
         {
             "before": ["u"],
@@ -59,26 +97,11 @@
             ]
         }
     ],
-    // Center the screen after ctrl d and ctrl u.
-    "vim.normalModeKeyBindings": [
-        {
-            "before": ["<C-d>"],
-            "after": ["<C-d>", "z", "z"]
-        },
-        {
-            "before": ["<C-u>"],
-            "after": ["<C-u>", "z", "z"]
-        }
-    ],
     "search.exclude": {
         "**/vendor": true,
     },
     "explorer.confirmDragAndDrop": false,
-    // I added these as an attempt to prevent vscode from flicking my cursor back after searching.
-    // THIS FAILED!!!!!!!
-    // "editor.find.seedSearchStringFromSelection": "never",
-    // "workbench.editor.restoreViewState": false,
-    // If that does not work, then I can try this:
+    // This prevents vscode from flicking my cursor back after searching.
     "key": "cmd+f",  // Use "ctrl+f" for Windows/Linux
     "command": "actions.find",
     "args": {
