@@ -38,7 +38,6 @@
     "vim.history": 1000,
     "vim.useSystemClipboard": false,
     "files.trimTrailingWhitespace": true,
-    // This causes vim to use the vscode undo/redo commands rather than the built in vim undo and redo.
     "vim.normalModeKeyBindings": [
         {
             "before": ["<C-d>"],
@@ -77,6 +76,7 @@
             "commands": ["workbench.files.action.focusFilesExplorer"]
         }
     ],
+    // This causes vim to use the vscode undo/redo commands rather than the built in vim undo and redo.
     "vim.normalModeKeyBindingsNonRecursive": [
         {
             "before": ["u"],
