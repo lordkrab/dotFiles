@@ -95,6 +95,21 @@
                     "command": "redo"
                 }
             ]
+        },
+        {
+            "before": ["g", "d"],
+            "after": [],
+            "commands": [
+                {
+                    "command": "editor.action.revealDefinition"
+                },
+                {
+                    "command": "vim.remap",
+                    "args": {
+                        "after": ["z", "z"]
+                    }
+                }
+            ]
         }
     ],
     "search.exclude": {

@@ -103,7 +103,7 @@ js() {
         --colors=match:none"
 
     if [ "$include_vendor" = false ]; then
-        rg_command="$rg_command --glob '!vendor/*'"
+	    rg_command="$rg_command --glob '!vendor/*' --glob '!**/vendor/**' --glob '!docs/*' --glob '!**/docs/**'"
     fi
 
     selected_file=$(eval "$rg_command \"$search_term\"" | \
@@ -413,7 +413,3 @@ export FZF_DEFAULT_OPTS="\
 --preview='bat --color=always {}' \
 --preview-window=hidden
 "
-
-if [ -z "$TMUX" ]; then
-    start-tmux.sh
-fi
