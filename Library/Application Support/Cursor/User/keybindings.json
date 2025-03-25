@@ -255,5 +255,10 @@
         "key": "ctrl+p",
         "command": "-showPrevParameterHint",
         "when": "editorFocus && parameterHintsMultipleSignatures && parameterHintsVisible"
+    },
+    {
+        "key": "cmd+backspace",
+        "command": "-editor.action.inlineDiffs.cancelEdits",
+        "when": "editorTextFocus && hasActivelyGeneratingDiff"
     }
 ]

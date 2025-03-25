@@ -81,49 +81,54 @@ jc () {
 
 # must brew install bat rg
 js() {
-    local selected_file
-    local include_vendor=false
-    local search_term=""
+    local line_range=29
+    local l_opt
+    local vendor_opt docs_opt api_client_opt
+    local exclude_opts=()
 
-    # Parse arguments
-    while [[ $# -gt 0 ]]; do
-        case $1 in
-            -v|--vendor) include_vendor=true; shift ;;
-            *) search_term="$1"; shift ;;
-        esac
-    done
+    # Parse options
+    zparseopts -D -E l:=l_opt -lines:=l_opt v=vendor_opt -vendor=vendor_opt d=docs_opt -docs=docs_opt a=api_client_opt -api_client=api_client_opt
 
-    # Set default search term if none provided
-    search_term=${search_term:-".*"}
-
-    # Use rg with built-in colors
-    local rg_command="rg --smart-case --line-number --color always \
-        --colors=path:fg:blue --colors=path:style:bold \
-        --colors=line:fg:green --colors=line:style:bold \
-        --colors=match:none"
-
-    if [ "$include_vendor" = false ]; then
-	    rg_command="$rg_command --glob '!vendor/*' --glob '!**/vendor/**' --glob '!docs/*' --glob '!**/docs/**'"
+    # Extract line range from option if provided
+    if [[ ${#l_opt} -gt 0 ]]; then
+        line_range=${l_opt[2]}
     fi
 
-    selected_file=$(eval "$rg_command \"$search_term\"" | \
-        fzf --ansi --preview-window=default --preview='
-            file=$(echo {} | cut -d ":" -f1 | head -n1)
-            line=$(echo {} | cut -d ":" -f2 | head -n1)
+    local search_term=${1:-".*"}  # Use first argument, default to '.*' if none provided
+
+    # Handle exclude directories
+    [[ ${#vendor_opt} -eq 0 ]] && exclude_opts+=("--glob=!*/vendor/**")
+    [[ ${#docs_opt} -eq 0 ]] && exclude_opts+=("--glob=!*/docs/**")
+    [[ ${#api_client_opt} -eq 0 ]] && exclude_opts+=("--glob=!*/api_client/**")
+
+    local selected_files
+    selected_files=$(rg --smart-case --line-number --color always \
+        ${exclude_opts[@]} \
+        --colors=path:fg:blue --colors=path:style:bold \
+        --colors=line:fg:green --colors=line:style:bold \
+        --colors=match:none \
+        "^\s*\S+.*$" | rg "$search_term" | fzf --ansi --multi --preview-window=default --preview='
+            file=$(echo {} | cut -d ":" -f1)
+            line=$(echo {} | cut -d ":" -f2)
+            line_range='"$line_range"'
             if [ -n "$file" ] && [ -n "$line" ]; then
-                bat --style=numbers,grid --color=always --highlight-line "$line" --line-range "$((line > 10 ? line - 10 : 1)):$((line + 10))" "$file"
+                bat --style=numbers,grid --color=always --highlight-line "$line" --line-range "$((line > line_range ? line - line_range : 1)):$((line + line_range))" "$file"
             fi
         ')
 
-    if [[ -n "$selected_file" ]]; then
-        local file line
-        file=$(echo "$selected_file" | cut -d ":" -f1 | head -n1)
-        line=$(echo "$selected_file" | cut -d ":" -f2 | head -n1)
+    files_to_open=()
+    if [ -n "$selected_files" ]; then
+        echo "$selected_files" | while IFS= read -r line; do
+            file=$(echo "$line" | cut -d ":" -f1)
+            line_num=$(echo "$line" | cut -d ":" -f2)
+            if [ -f "$file" ]; then
+                files_to_open+=("$file:$line_num")
+            fi
+        done
+    fi
 
-        if [[ -f "$file" ]]; then
-            print -s "cursor -g \"$file:$line\""
-            cursor -g "$file:$line"
-        fi
+    if [ "${#files_to_open[@]}" -gt 0 ]; then
+        cursor -g "${files_to_open[@]}"
     fi
 }
 
@@ -189,13 +194,6 @@ function g() {
   cd $(git rev-parse --show-toplevel)
 }
 
-function syncPos {
-  currentDir=$(pwd)
-  cd ~/workplace/pos && git pull &
-  cd ~/workplace/pos-backend && git pull &
-  cd $currentDir
-}
-
 # Plugins
 # -----------------------------------------------------------------------------
 #     brew install zsh-completion
@@ -226,6 +224,13 @@ source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zs
 
 #     brew install zoxide
 eval "$(zoxide init zsh --cmd cd)"
+cd() {
+  if [ "$1" = "." ] || [ "$(realpath "$1" 2>/dev/null)" = "$(pwd)" ]; then
+    return 0
+  else
+    __zoxide_z "$@"
+  fi
+}
 
 # Global Settings
 # -----------------------------------------------------------------------------
@@ -413,3 +418,4 @@ export FZF_DEFAULT_OPTS="\
 --preview='bat --color=always {}' \
 --preview-window=hidden
 "
+
