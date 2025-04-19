@@ -1,7 +1,9 @@
 {
     "explorer.confirmDelete": false,
     "files.exclude": {
-        "**/__pycache__": true
+        "**/__pycache__": true,
+        "**/*.freezed.dart": true,
+        "**/*.g.dart": true
     },
     "editor.renderWhitespace": "all",
     "editor.lineNumbers": "relative",
