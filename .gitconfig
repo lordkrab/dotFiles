@@ -1,0 +1,22 @@
+# This is Git's per-user configuration file.
+[user]
+name = Jakob Berg
+email = jmberg121@gmail.com
+[init]
+	defaultBranch = mainline
+[pull]
+	rebase = true
+[diff]
+	tool = vimdiff
+[difftool]
+	prompt = false
+[color]
+	ui = always
+[delta]
+    syntax-theme = Catppuccin Mocha
+    paging = always
+    line-numbers = true
+    plus-style = "syntax #003b1c"
+    minus-style = "syntax #4a0c0c"
+[core]
+    pager = delta
