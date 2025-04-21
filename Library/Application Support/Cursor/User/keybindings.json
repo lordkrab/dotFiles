@@ -271,7 +271,7 @@
         "command": "composerMode.agent"
     },
     {
-        "key": "cmd+9",
+        "key": "cmd+8",
         "command": "editor.action.marker.nextInFiles",
         "when": "editorFocus"
     },
@@ -303,5 +303,13 @@
         "key": "f5",
         "command": "-workbench.action.debug.start",
         "when": "debuggersAvailable && debugState == 'inactive'"
+    },
+    {
+        "key": "shift+cmd+b",
+        "command": "workbench.action.toggleAuxiliaryBar"
+    },
+    {
+        "key": "alt+cmd+b",
+        "command": "-workbench.action.toggleAuxiliaryBar"
     }
 ]
