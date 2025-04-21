@@ -13,7 +13,6 @@ email = jmberg121@gmail.com
 [color]
 	ui = always
 [delta] # brew install git-delta
-    syntax-theme = Catppuccin Mocha
     paging = always
     line-numbers = true
     plus-style = "syntax #003b1c"
