@@ -1,6 +1,17 @@
 # https://github.com/koekeishiya/skhd/
-# ^ See this for more information on how to configure skhd
+# skhd --start-service
+# skhd --reload
 
-# ctrl - s : open -a '/Applications/Cursor.app'
-# ctrl - f : open -a '/Applications/Firefox.app'
-ctrl - m : open -a '/Applications/Spotify.app'
+# Run "skhd --restart-service && yabai --restart-service" if shortcuts are not behaving
+
+# Apps
+hyper - j : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Alacritty" ]; then open -a '/Applications/Alacritty.app'; else skhd -k 'cmd - h'; fi
+hyper - f : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Cursor" ]; then open -a '/Applications/Cursor.app'; else skhd -k 'cmd - h'; fi
+hyper - s : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Firefox" ]; then open -a '/Applications/Firefox.app'; else skhd -k 'cmd - h'; fi
+hyper - v : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Discord" ]; then open -a '/Applications/Discord.app'; else skhd -k 'cmd - h'; fi
+hyper - m : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Spotify" ]; then open -a '/Applications/Spotify.app'; else skhd -k 'cmd - h'; fi
+hyper - u : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Slack" ]; then open -a '/Applications/Slack.app'; else skhd -k 'cmd - h'; fi
+hyper - t : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Messages" ]; then open -a messages; else skhd -k 'cmd - h'; fi
+
+# Hide all but focused
+hyper - q : skhd -k 'cmd + alt - h'

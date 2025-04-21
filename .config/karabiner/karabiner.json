@@ -83,6 +83,25 @@
                                 "type": "basic"
                             }
                         ]
+                    },
+                    {
+                        "description": "Change right command to HYPER (command+control+option+shift)",
+                        "manipulators": [
+                            {
+                                "description": "Change right command to HYPER (command+control+option+shift)",
+                                "from": {
+                                    "key_code": "right_command",
+                                    "modifiers": { "optional": ["any"] }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "left_shift",
+                                        "modifiers": ["left_command", "left_control", "left_option"]
+                                    }
+                                ],
+                                "type": "basic"
+                            }
+                        ]
                     }
                 ]
             },
