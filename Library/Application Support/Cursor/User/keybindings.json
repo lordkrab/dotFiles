@@ -412,19 +412,11 @@
         "command": "workbench.action.evenEditorWidths"
     },
     {
-        "key": "ctrl+a v",
-        "command": "workbench.action.splitEditorRight"
-    },
-    {
-        "key": "cmd+r cmd+\\",
-        "command": "-workbench.action.splitEditorRight"
-    },
-    {
         "key": "ctrl+a s",
-        "command": "workbench.action.splitEditorDown"
+        "command": "workbench.action.moveEditorToBelowGroup"
     },
     {
-        "key": "cmd+r cmd+\\",
-        "command": "-workbench.action.splitEditorDown"
+        "key": "ctrl+a v",
+        "command": "workbench.action.moveEditorToNextGroup"
     }
 ]
