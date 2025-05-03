@@ -132,6 +132,38 @@ js() {
     fi
 }
 
+# js git: Search for files from git root using fzf, respecting .gitignore
+jsg() {
+    local git_root
+    git_root=$(git rev-parse --show-toplevel 2>/dev/null)
+
+    if [[ -z "$git_root" ]]; then
+        echo "Not inside a git repository." >&2
+        return 1
+    fi
+
+    # Run in a subshell to avoid changing the CWD of the main shell
+    (
+        cd "$git_root" || return 1
+
+        local selected_files
+        # Use git ls-files to get files respecting .gitignore
+        # Pipe to fzf for multi-selection
+        selected_files=$(git ls-files | fzf --multi)
+
+        if [[ -n "$selected_files" ]]; then
+            # Convert newline-separated string from fzf into a Zsh array
+            local -a files_to_open
+            files_to_open=("${(@f)selected_files}")
+
+            if [ "${#files_to_open[@]}" -gt 0 ]; then
+                # Open selected files (relative paths are correct since we are in git_root)
+                command cursor "${files_to_open[@]}"
+            fi
+        fi
+    )
+}
+
 # After entering these, you need to log out and log back in. On OSX, these make your keys get entered much faster!
 defaults write -g InitialKeyRepeat -int 10 # normal minimum is 15 (225 ms)
 defaults write -g KeyRepeat -int 1 # normal minimum is 2 (30 ms)
@@ -397,6 +429,14 @@ function cdi_and_accept() {
 zle -N cdi_and_accept
 bindkey ^J cdi_and_accept
 
+# Bind Ctrl+H to jsg (Note: This overrides default Ctrl+H behavior like backspace)
+jsg-widget() {
+  jsg
+  zle redisplay
+}
+zle -N jsg-widget
+bindkey '^H' jsg-widget
+
 export PATH="$PATH:/Users/jakobberg/workplace/flutter/bin"
 export PATH="$PATH:$(go env GOPATH)/bin"
 export PATH="$PATH:/Users/jakobberg/workplace/github/scripts"
@@ -419,3 +459,4 @@ export FZF_DEFAULT_OPTS="\
 --preview-window=hidden
 "
 
+export GOPATH="$HOME/go"

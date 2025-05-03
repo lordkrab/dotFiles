@@ -73,10 +73,6 @@
         "when": "workbench.panel.repl.view.active"
     },
     {
-        "key": "cmd+9",
-        "command": "workbench.action.evenEditorWidths"
-    },
-    {
         "key": "cmd+s",
         "command": "-workbench.action.files.save"
     },
@@ -311,5 +307,108 @@
     {
         "key": "alt+cmd+b",
         "command": "-workbench.action.toggleAuxiliaryBar"
-    }
+    },
+    {
+        "key": "ctrl+`",
+        "command": "-workbench.action.terminal.toggleTerminal",
+        "when": "terminal.active"
+    },
+    {
+        "key": "shift+cmd+8",
+        "command": "editor.action.marker.prevInFiles",
+        "when": "editorFocus"
+    },
+    {
+        "key": "shift+f8",
+        "command": "-editor.action.marker.prevInFiles",
+        "when": "editorFocus"
+    },
+    {
+        "key": "cmd+4",
+        "command": "workbench.action.debug.continue",
+        "when": "debugState == 'stopped'"
+    },
+    {
+        "key": "f5",
+        "command": "-workbench.action.debug.continue",
+        "when": "debugState == 'stopped'"
+    },
+    {
+        "key": "ctrl+z",
+        "command": "workbench.action.toggleMaximizeEditorGroup",
+        "when": "editorPartMaximizedEditorGroup || editorPartMultipleEditorGroups"
+    },
+    {
+        "key": "cmd+r cmd+m",
+        "command": "-workbench.action.toggleMaximizeEditorGroup",
+        "when": "editorPartMaximizedEditorGroup || editorPartMultipleEditorGroups"
+    },
+    {
+        "key": "ctrl+a k",
+        "command": "workbench.action.focusAboveGroup"
+    },
+    {
+        "key": "cmd+r cmd+up",
+        "command": "-workbench.action.focusAboveGroup"
+    },
+    {
+        "key": "ctrl+a j",
+        "command": "workbench.action.focusBelowGroup"
+    },
+    {
+        "key": "cmd+r cmd+down",
+        "command": "-workbench.action.focusBelowGroup"
+    },
+    {
+        "key": "ctrl+a h",
+        "command": "workbench.action.focusLeftGroup"
+    },
+    {
+        "key": "cmd+r cmd+left",
+        "command": "-workbench.action.focusLeftGroup"
+    },
+    {
+        "key": "ctrl+a l",
+        "command": "workbench.action.focusRightGroup"
+    },
+    {
+        "key": "cmd+r cmd+right",
+        "command": "-workbench.action.focusRightGroup"
+    },
+    {
+        "key": "ctrl+a down",
+        "command": "workbench.action.moveActiveEditorGroupDown"
+    },
+    {
+        "key": "cmd+r down",
+        "command": "-workbench.action.moveActiveEditorGroupDown"
+    },
+    {
+        "key": "ctrl+a left",
+        "command": "workbench.action.moveActiveEditorGroupLeft"
+    },
+    {
+        "key": "cmd+r left",
+        "command": "-workbench.action.moveActiveEditorGroupLeft"
+    },
+    {
+        "key": "ctrl+a right",
+        "command": "workbench.action.moveActiveEditorGroupRight"
+    },
+    {
+        "key": "cmd+r right",
+        "command": "-workbench.action.moveActiveEditorGroupRight"
+    },
+    {
+        "key": "ctrl+a up",
+        "command": "workbench.action.moveActiveEditorGroupUp"
+    },
+    {
+        "key": "cmd+r up",
+        "command": "-workbench.action.moveActiveEditorGroupUp"
+    },
+    {
+        "key": "cmd+9",
+        "command": "workbench.action.evenEditorWidths"
+    },
 ]

@@ -24,6 +24,10 @@
     "editor.cursorBlinking": "solid",
     "dart.flutterSdkPath": "/Users/jakobberg/workplace/flutter",
     "workbench.settings.applyToAllProfiles": ["editor.formatOnSave"],
+    "[go]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "golang.go"
+    },
     "go.lintTool": "golangci-lint",
     "window.zoomLevel": 2,
     "go.toolsManagement.autoUpdate": true,
