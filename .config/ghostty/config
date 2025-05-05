@@ -1,0 +1,9 @@
+term = "xterm-256color"
+
+background-opacity = 0.8
+
+window-decoration = "none"
+
+font-family = "MesloLGS Nerd Font Mono"
+font-size = 16
+
