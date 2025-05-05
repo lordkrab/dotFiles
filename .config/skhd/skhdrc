@@ -17,13 +17,37 @@ hyper - s : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Firef
     skhd -k 'cmd - h'; \
   fi
 
-hyper - v : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Discord" ]; then open -a '/Applications/Discord.app'; else skhd -k 'cmd - h'; fi
+hyper - v : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Discord" ]; then \
+    yabai -m config mouse_follows_focus on; \
+    open -a '/Applications/Discord.app'; \
+    yabai -m config mouse_follows_focus off; \
+  else \
+    skhd -k 'cmd - h'; \
+  fi
 
-hyper - m : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Spotify" ]; then open -a '/Applications/Spotify.app'; else skhd -k 'cmd - h'; fi
+hyper - m : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Spotify" ]; then \
+    yabai -m config mouse_follows_focus on; \
+    open -a '/Applications/Spotify.app'; \
+    yabai -m config mouse_follows_focus off; \
+  else \
+    skhd -k 'cmd - h'; \
+  fi
 
-hyper - u : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Slack" ]; then open -a '/Applications/Slack.app'; else skhd -k 'cmd - h'; fi
+hyper - u : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Slack" ]; then \
+    yabai -m config mouse_follows_focus on; \
+    open -a '/Applications/Slack.app'; \
+    yabai -m config mouse_follows_focus off; \
+  else \
+    skhd -k 'cmd - h'; \
+  fi
 
-hyper - n : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Messages" ]; then open -a messages; else skhd -k 'cmd - h'; fi
+hyper - n : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Messages" ]; then \
+    yabai -m config mouse_follows_focus on; \
+    open -a messages; \
+    yabai -m config mouse_follows_focus off; \
+  else \
+    skhd -k 'cmd - h'; \
+  fi
 
 hyper - r : POS_WINDOW_ID=$(yabai -m query --windows | jq --raw-output '.[] | select(.app == "pos") | .id' | head -n 1); \
   if [ -n "$POS_WINDOW_ID" ]; then \
