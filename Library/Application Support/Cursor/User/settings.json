@@ -116,6 +116,21 @@
                     }
                 }
             ]
+        },
+        {
+            "before": ["g", "s"],
+            "after": [],
+            "commands": [
+                {
+                    "command": "vim.remap",
+                    "args": {
+                        "after": ["m", "'"]
+                    }
+                },
+                {
+                    "command": "editor.action.goToReferences"
+                }
+            ]
         }
     ],
     "search.exclude": {
