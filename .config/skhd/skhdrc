@@ -10,50 +10,38 @@ hyper - t : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Alacr
 hyper - f : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Cursor" ]; then open -a '/Applications/Cursor.app'; else skhd -k 'cmd - h'; fi
 
 hyper - s : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Firefox" ]; then \
-    yabai -m config mouse_follows_focus on; \
     open -a '/Applications/Firefox.app'; \
-    yabai -m config mouse_follows_focus off; \
   else \
     skhd -k 'cmd - h'; \
   fi
 
 hyper - v : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Discord" ]; then \
-    yabai -m config mouse_follows_focus on; \
     open -a '/Applications/Discord.app'; \
-    yabai -m config mouse_follows_focus off; \
   else \
     skhd -k 'cmd - h'; \
   fi
 
 hyper - m : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Spotify" ]; then \
-    yabai -m config mouse_follows_focus on; \
     open -a '/Applications/Spotify.app'; \
-    yabai -m config mouse_follows_focus off; \
   else \
     skhd -k 'cmd - h'; \
   fi
 
-hyper - u : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Slack" ]; then \
-    yabai -m config mouse_follows_focus on; \
-    open -a '/Applications/Slack.app'; \
-    yabai -m config mouse_follows_focus off; \
+hyper - e : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "MongoDB Compass" ]; then \
+    open -a /Applications/MongoDB\ Compass.app; \
   else \
     skhd -k 'cmd - h'; \
   fi
 
 hyper - n : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Messages" ]; then \
-    yabai -m config mouse_follows_focus on; \
     open -a messages; \
-    yabai -m config mouse_follows_focus off; \
   else \
     skhd -k 'cmd - h'; \
   fi
 
 hyper - r : POS_WINDOW_ID=$(yabai -m query --windows | jq --raw-output '.[] | select(.app == "pos") | .id' | head -n 1); \
   if [ -n "$POS_WINDOW_ID" ]; then \
-    yabai -m config mouse_follows_focus on; \
     yabai -m window --focus "$POS_WINDOW_ID"; \
-    yabai -m config mouse_follows_focus off; \
   else \
     skhd -k 'cmd - h'; \
   fi
