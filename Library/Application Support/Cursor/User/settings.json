@@ -44,6 +44,7 @@
     "vim.history": 1000,
     "vim.useSystemClipboard": false,
     "files.trimTrailingWhitespace": true,
+    "vim.leader": " ",
     "vim.normalModeKeyBindings": [
         {
             "before": ["<C-d>"],
@@ -52,6 +53,14 @@
         {
             "before": ["<C-u>"],
             "after": ["<C-u>", "z", "z"]
+        },
+        {
+            "before": ["<C-i>"],
+            "after": ["<C-i>", "z", "z"]
+        },
+        {
+            "before": ["<C-o>"],
+            "after": ["<C-o>", "z", "z"]
         },
         {
             "before": ["n"],
@@ -80,6 +89,14 @@
         {
             "before": ["<leader>", "e"],
             "commands": ["workbench.files.action.focusFilesExplorer"]
+        },
+        {
+            "before": ["[", "q"],
+            "commands": ["editor.action.marker.prev"]
+        },
+        {
+            "before": ["]", "q"],
+            "commands": ["editor.action.marker.next"]
         }
     ],
     // This causes vim to use the vscode undo/redo commands rather than the built in vim undo and redo.
@@ -124,7 +141,7 @@
                 {
                     "command": "vim.remap",
                     "args": {
-                        "after": ["m", "'"]
+                        "after": ["m", "'", "z", "z"]
                     }
                 },
                 {

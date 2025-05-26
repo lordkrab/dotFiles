@@ -418,5 +418,25 @@
     {
         "key": "ctrl+a v",
         "command": "workbench.action.moveEditorToNextGroup"
+    },
+    {
+        "key": "ctrl+j",
+        "command": "editorScroll",
+        "args": {
+            "to": "down",
+            "by": "line",
+            "revealCursor": false,
+            "value": 1
+        }
+    },
+    {
+        "key": "ctrl+k",
+        "command": "editorScroll",
+        "args": {
+            "to": "up",
+            "by": "line",
+            "revealCursor": false,
+            "value": 1
+        }
     }
 ]
