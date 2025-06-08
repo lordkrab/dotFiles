@@ -85,3 +85,5 @@ nnoremap N Nzz
 
 " No annoying bell!!!
 set belloff=all
+
+colorscheme murphy

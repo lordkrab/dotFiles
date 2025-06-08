@@ -97,6 +97,14 @@
         {
             "before": ["]", "q"],
             "commands": ["editor.action.marker.next"]
+        },
+        {
+            "before": ["[", "Q"],
+            "commands": ["editor.action.marker.prevInFiles"]
+        },
+        {
+            "before": ["]", "Q"],
+            "commands": ["editor.action.marker.nextInFiles"]
         }
     ],
     // This causes vim to use the vscode undo/redo commands rather than the built in vim undo and redo.

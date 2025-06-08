@@ -33,6 +33,12 @@ hyper - e : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Mongo
     skhd -k 'cmd - h'; \
   fi
 
+hyper - c : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Google Chrome" ]; then \
+    open -a /Applications/Google\ Chrome.app; \
+  else \
+    skhd -k 'cmd - h'; \
+  fi
+
 hyper - n : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Messages" ]; then \
     open -a messages; \
   else \

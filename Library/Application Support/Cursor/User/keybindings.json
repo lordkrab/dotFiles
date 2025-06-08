@@ -438,5 +438,17 @@
             "revealCursor": false,
             "value": 1
         }
+    },
+    {
+        "key": "ctrl+`",
+        "command": "workbench.action.terminal.toggleTerminal"
+    },
+    {
+        "key": "cmd+7",
+        "command": "launches.focusNextDebugSession"
+    },
+    {
+        "key": "shift+cmd+7",
+        "command": "launches.focusPreviousDebugSession"
     }
 ]
