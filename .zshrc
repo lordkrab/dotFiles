@@ -86,50 +86,68 @@ js() {
     local vendor_opt docs_opt api_client_opt
     local exclude_opts=()
 
-    # Parse options
-    zparseopts -D -E l:=l_opt -lines:=l_opt v=vendor_opt -vendor=vendor_opt d=docs_opt -docs=docs_opt a=api_client_opt -api_client=api_client_opt
+    # ── option parsing ──────────────────────────────────────────────────────────
+    zparseopts -D -E l:=l_opt -lines:=l_opt \
+               v=vendor_opt -vendor=vendor_opt \
+               d=docs_opt   -docs=docs_opt   \
+               a=api_client_opt -api_client=api_client_opt
 
-    # Extract line range from option if provided
+    # Custom preview line-range
     if [[ ${#l_opt} -gt 0 ]]; then
         line_range=${l_opt[2]}
     fi
 
-    local search_term=${1:-".*"}  # Use first argument, default to '.*' if none provided
-
-    # Handle exclude directories
-    [[ ${#vendor_opt} -eq 0 ]] && exclude_opts+=("--glob=!*/vendor/**")
-    [[ ${#docs_opt} -eq 0 ]] && exclude_opts+=("--glob=!*/docs/**")
+    # Exclude directories by default (overridden by flags above)
+    [[ ${#vendor_opt}     -eq 0 ]] && exclude_opts+=("--glob=!*/vendor/**")
+    [[ ${#docs_opt}       -eq 0 ]] && exclude_opts+=("--glob=!*/docs/**")
     [[ ${#api_client_opt} -eq 0 ]] && exclude_opts+=("--glob=!*/api_client/**")
 
+    # ── positional arguments ────────────────────────────────────────────────────
+    local -a search_dirs
+    if (( $# > 0 )); then
+        # Everything left after zparseopts is treated as a directory / path spec.
+        search_dirs=("$@")
+    fi
+
+    # Pattern used by the *second* rg – always keep the default of '.*'
+    local search_term='.*'
+
+    # ── ripgrep + fzf pipeline ──────────────────────────────────────────────────
     local selected_files
-    selected_files=$(rg --smart-case --line-number --color always \
-        ${exclude_opts[@]} \
-        --colors=path:fg:blue --colors=path:style:bold \
-        --colors=line:fg:green --colors=line:style:bold \
-        --colors=match:none \
-        "^\s*\S+.*$" | rg "$search_term" | fzf --ansi --multi --preview-window=default --preview='
-            file=$(echo {} | cut -d ":" -f1)
-            line=$(echo {} | cut -d ":" -f2)
-            line_range='"$line_range"'
-            if [ -n "$file" ] && [ -n "$line" ]; then
-                bat --style=numbers,grid --color=always --highlight-line "$line" --line-range "$((line > line_range ? line - line_range : 1)):$((line + line_range))" "$file"
-            fi
-        ')
+    selected_files=$(
+        rg --smart-case --line-number --color=always \
+           "${exclude_opts[@]}" \
+           --colors=path:fg:blue   --colors=path:style:bold \
+           --colors=line:fg:green  --colors=line:style:bold \
+           --colors=match:none \
+           '^\s*\S+.*$' \
+           "${search_dirs[@]}"  |\
+        rg "$search_term" |\
+        fzf --ansi --multi --preview-window=default \
+            --preview='
+                file=$(echo {} | cut -d ":" -f1)
+                line=$(echo {} | cut -d ":" -f2)
+                line_range='"$line_range"'
+                if [[ -n "$file" && -n "$line" ]]; then
+                    bat --style=numbers,grid --color=always \
+                        --highlight-line "$line" \
+                        --line-range "$(( line > line_range ? line - line_range : 1 )):$(( line + line_range ))" \
+                        "$file"
+                fi
+            '
+    )
 
-    files_to_open=()
-    if [ -n "$selected_files" ]; then
-        echo "$selected_files" | while IFS= read -r line; do
-            file=$(echo "$line" | cut -d ":" -f1)
-            line_num=$(echo "$line" | cut -d ":" -f2)
-            if [ -f "$file" ]; then
-                files_to_open+=("$file:$line_num")
-            fi
-        done
+    # ── open the chosen files in Cursor ─────────────────────────────────────────
+    local files_to_open=()
+    if [[ -n "$selected_files" ]]; then
+        while IFS= read -r line; do
+            local file=$(echo "$line" | cut -d ":" -f1)
+            local line_num=$(echo "$line" | cut -d ":" -f2)
+            [[ -f "$file" ]] && files_to_open+=("$file:$line_num")
+        done <<< "$selected_files"
     fi
 
-    if [ "${#files_to_open[@]}" -gt 0 ]; then
-        cursor -g "${files_to_open[@]}"
-    fi
+    (( ${#files_to_open[@]} > 0 )) && cursor -g "${files_to_open[@]}"
 }
 
 # js git: Search for files from git root using fzf, respecting .gitignore
@@ -203,6 +221,8 @@ alias gco='git checkout'
 alias gcb='git checkout -b'
 alias gd='git diff'
 alias gds='git diff --staged'
+alias gdo='git difftool'
+alias gdos='git difftool --staged'
 alias gf='git fetch'
 alias gpl='git pull'
 alias gps='git push'
@@ -230,12 +250,9 @@ function g() {
 # Plugins
 # -----------------------------------------------------------------------------
 #     brew install zsh-completion
-
-# https://github.com/zsh-users/zsh-completions/issues/433
-# https://stackoverflow.com/questions/13762280/zsh-compinit-insecure-directories
-if type brew &>/dev/null; then
-    FPATH=$(brew --prefix)/share/zsh-completions:$FPATH
-fi
+#     # and do this to get rid of annoying [y|n] popup whenever terminal opens
+#     compaudit | xargs chmod g-w
+#     
 
 autoload bashcompinit && bashcompinit
 autoload -Uz compinit && compinit
@@ -459,5 +476,7 @@ export FZF_DEFAULT_OPTS="\
 --preview='bat --color=always {}' \
 --preview-window=hidden
 "
+
+bindkey '^F' fzf-file-widget
 
 export GOPATH="$HOME/go"

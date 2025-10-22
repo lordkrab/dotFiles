@@ -7,13 +7,14 @@ email = jmberg121@gmail.com
 [pull]
 	rebase = true
 [diff]
-	tool = vimdiff
+	tool = nvimdiff
 [difftool]
 	prompt = false
 [color]
 	ui = always
 [delta] # brew install git-delta
     paging = always
+    pager = "less -R -M"
     line-numbers = true
     plus-style = "syntax #003b1c"
     minus-style = "syntax #4a0c0c"

@@ -3,7 +3,8 @@
     "files.exclude": {
         "**/__pycache__": true,
         "**/*.freezed.dart": true,
-        "**/*.g.dart": true
+        "**/*.g.dart": true,
+        "**/api_client/**": true
     },
     "editor.renderWhitespace": "all",
     "editor.lineNumbers": "relative",
@@ -39,8 +40,8 @@
         "markdown"
     ],
     "git.openRepositoryInParentFolders": "never",
-    "dart.debugExternalPackageLibraries": false,
-    "dart.debugSdkLibraries": false,
+    "dart.debugExternalPackageLibraries": true,
+    "dart.debugSdkLibraries": true,
     "vim.history": 1000,
     "vim.useSystemClipboard": false,
     "files.trimTrailingWhitespace": true,
@@ -171,5 +172,7 @@
     "editor.tokenColorCustomizations": {
         "comments": "#1ed843" // You can use any hex color code you prefer
     },
-    "explorer.confirmPasteNative": false
+    "explorer.confirmPasteNative": false,
+    "dart.warnWhenEditingFilesOutsideWorkspace": false,
+    "cursor.cpp.enablePartialAccepts": true
 }
