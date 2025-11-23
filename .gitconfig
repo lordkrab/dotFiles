@@ -20,3 +20,5 @@ email = jmberg121@gmail.com
     minus-style = "syntax #4a0c0c"
 [core]
     pager = delta
+[credential]
+	helper = osxkeychain
