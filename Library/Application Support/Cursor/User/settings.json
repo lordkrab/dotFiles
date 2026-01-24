@@ -174,5 +174,7 @@
     },
     "explorer.confirmPasteNative": false,
     "dart.warnWhenEditingFilesOutsideWorkspace": false,
-    "cursor.cpp.enablePartialAccepts": true
+    "cursor.cpp.enablePartialAccepts": true,
+    "cursor.composer.usageSummaryDisplay": "always",
+    "cursor.composer.shouldChimeAfterChatFinishes": true
 }

@@ -83,33 +83,76 @@ jc () {
 js() {
     local line_range=29
     local l_opt
-    local vendor_opt docs_opt api_client_opt
+    local help_opt vendor_opt docs_opt api_client_opt
     local exclude_opts=()
 
+    # Add more default-skip dirs here 👇
+    local -a default_skip_dirs=(vendor docs api_client)
+
     # ── option parsing ──────────────────────────────────────────────────────────
-    zparseopts -D -E l:=l_opt -lines:=l_opt \
-               v=vendor_opt -vendor=vendor_opt \
-               d=docs_opt   -docs=docs_opt   \
-               a=api_client_opt -api_client=api_client_opt
+    zparseopts -D -E \
+        h=help_opt -help=help_opt \
+        l:=l_opt -lines:=l_opt \
+        v=vendor_opt -vendor=vendor_opt \
+        d=docs_opt   -docs=docs_opt \
+        a=api_client_opt -api_client=api_client_opt
+
+    if [[ ${#help_opt} -gt 0 ]]; then
+        cat <<'EOF'
+js — ripgrep → fzf → open selection in Cursor
+
+Usage:
+  js [options] [path ...]
+  js -h | --help
+
+Options:
+  -h, --help          Show this help
+  -l, --lines N       Preview context (default: 29)
+  -v, --vendor        Include vendor/ (normally skipped)
+  -d, --docs          Include docs/ (normally skipped)
+  -a, --api_client    Include api_client/ (normally skipped)
+
+Behavior:
+  - By default, skips: vendor/ docs/ api_client/ (edit default_skip_dirs to add more)
+  - If no paths are provided, searches from "."
+
+Examples:
+  js
+  js src .
+  js -l 60
+  js --vendor .
+EOF
+        return 0
+    fi
 
     # Custom preview line-range
     if [[ ${#l_opt} -gt 0 ]]; then
         line_range=${l_opt[2]}
     fi
 
-    # Exclude directories by default (overridden by flags above)
-    [[ ${#vendor_opt}     -eq 0 ]] && exclude_opts+=("--glob=!*/vendor/**")
-    [[ ${#docs_opt}       -eq 0 ]] && exclude_opts+=("--glob=!*/docs/**")
-    [[ ${#api_client_opt} -eq 0 ]] && exclude_opts+=("--glob=!*/api_client/**")
+    # Which dirs should we NOT skip this run?
+    local -a include_dirs=()
+    [[ ${#vendor_opt}     -gt 0 ]] && include_dirs+=(vendor)
+    [[ ${#docs_opt}       -gt 0 ]] && include_dirs+=(docs)
+    [[ ${#api_client_opt} -gt 0 ]] && include_dirs+=(api_client)
+
+    # Build rg exclude globs from the list
+    local d
+    for d in "${default_skip_dirs[@]}"; do
+        if (( ${include_dirs[(Ie)$d]} == 0 )); then
+            # **/ catches top-level + nested dirs
+            exclude_opts+=(--glob "!**/${d}/**")
+        fi
+    done
 
     # ── positional arguments ────────────────────────────────────────────────────
     local -a search_dirs
     if (( $# > 0 )); then
-        # Everything left after zparseopts is treated as a directory / path spec.
         search_dirs=("$@")
+    else
+        search_dirs=(.)
     fi
 
-    # Pattern used by the *second* rg – always keep the default of '.*'
     local search_term='.*'
 
     # ── ripgrep + fzf pipeline ──────────────────────────────────────────────────
@@ -121,7 +164,7 @@ js() {
            --colors=line:fg:green  --colors=line:style:bold \
            --colors=match:none \
            '^\s*\S+.*$' \
-           "${search_dirs[@]}"  |\
+           "${search_dirs[@]}" |\
         rg "$search_term" |\
         fzf --ansi --multi --preview-window=default \
             --preview='
@@ -149,6 +192,8 @@ js() {
 
     (( ${#files_to_open[@]} > 0 )) && cursor -g "${files_to_open[@]}"
 }
+
+alias gr="git rev-parse --show-toplevel"
 
 # js git: Search for files from git root using fzf, respecting .gitignore
 jsg() {
@@ -208,6 +253,7 @@ alias la='eza --group-directories-first --icons -la'
 alias tree='eza --group-directories-first --icons --tree'
 alias '..'='cd ..'
 alias '~'='cd ~'
+alias ff="readlink -f"
 
 # git aliases
 alias ga='git add'
@@ -252,7 +298,7 @@ function g() {
 #     brew install zsh-completion
 #     # and do this to get rid of annoying [y|n] popup whenever terminal opens
 #     compaudit | xargs chmod g-w
-#     
+#
 
 autoload bashcompinit && bashcompinit
 autoload -Uz compinit && compinit
@@ -458,6 +504,15 @@ bindkey '^H' jsg-widget
 export PATH="$PATH:/Users/jakobberg/workplace/flutter/bin"
 export PATH="$PATH:$(go env GOPATH)/bin"
 export PATH="$PATH:/Users/jakobberg/workplace/github/scripts"
+export PATH="$PATH:/Users/jakobberg/.swiftly/bin"
+
+# Load backend environment variables automatically if available.
+backend_env_file="$HOME/workplace/pos-monolith/backend/.env"
+if [[ -f "$backend_env_file" ]]; then
+  set -a
+  source "$backend_env_file"
+  set +a
+fi
 
 x=$(echo $PATH | tr ":" "\n" | sort | uniq | tr "\n" ":")
 export PATH="${x::-1}"
@@ -472,6 +527,8 @@ function tmuxSourceAll() {
     tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index}' | xargs -I {} tmux send-keys -t {} 'source ~/.zshrc' Enter
 }
 
+export FZF_DEFAULT_COMMAND='fd --hidden --follow --exclude .git --exclude vendor'
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 export FZF_DEFAULT_OPTS="\
 --ansi \
 --multi \
@@ -480,6 +537,14 @@ export FZF_DEFAULT_OPTS="\
 --preview-window=hidden
 "
 
+alias ghs='gh run watch $(gh run list --json databaseId -q ".[0].databaseId")'
+
 bindkey '^F' fzf-file-widget
 
 export GOPATH="$HOME/go"
+export POS_AGENT_DB_PATH="/Users/jakobberg/workplace/pos-monolith/agent/pos-agent.sqlite"
+export POS_AGENT_BACKEND_BASE_URL="http://localhost:8080"
+
+autoload -U +X bashcompinit && bashcompinit
+complete -o nospace -C /opt/homebrew/bin/terraform terraform
+export PATH="$HOME/.local/bin:$PATH"
