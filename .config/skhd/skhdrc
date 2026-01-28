@@ -12,6 +12,12 @@ hyper - t : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Alacr
 
 hyper - g : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Postman" ]; then open -a '/Applications/Postman.app'; else skhd -k 'cmd - h'; fi
 
+hyper - r : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Kindle" ]; then \
+    open -a /Applications/Amazon\ Kindle.app; \
+  else \
+    skhd -k 'cmd - h'; \
+  fi
+
 hyper - f : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Cursor" ]; then open -a '/Applications/Cursor.app'; else skhd -k 'cmd - h'; fi
 
 hyper - s : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Brave Browser" ]; then \
