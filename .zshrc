@@ -323,8 +323,11 @@ eval "$(zoxide init zsh --cmd cd)"
 cd() {
   if [ "$1" = "." ] || [ "$(realpath "$1" 2>/dev/null)" = "$(pwd)" ]; then
     return 0
-  else
+  elif type __zoxide_z &>/dev/null; then
     __zoxide_z "$@"
+  else
+    # Fallback for non-interactive shells where zoxide isn't loaded
+    builtin cd "$@"
   fi
 }
 
