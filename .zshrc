@@ -99,7 +99,7 @@ js() {
 
     if [[ ${#help_opt} -gt 0 ]]; then
         cat <<'EOF'
-js — ripgrep → fzf → open selection in Cursor
+js — ripgrep → fzf → open selection in nvim
 
 Usage:
   js [options] [path ...]
@@ -180,17 +180,21 @@ EOF
             '
     )
 
-    # ── open the chosen files in Cursor ─────────────────────────────────────────
+    # ── open the chosen files in nvim ───────────────────────────────────────────
     local files_to_open=()
+    local first_line_num=""
     if [[ -n "$selected_files" ]]; then
         while IFS= read -r line; do
             local file=$(echo "$line" | cut -d ":" -f1)
             local line_num=$(echo "$line" | cut -d ":" -f2)
-            [[ -f "$file" ]] && files_to_open+=("$file:$line_num")
+            if [[ -f "$file" ]]; then
+                files_to_open+=("$file")
+                [[ -z "$first_line_num" ]] && first_line_num="$line_num"
+            fi
         done <<< "$selected_files"
     fi
 
-    (( ${#files_to_open[@]} > 0 )) && cursor -g "${files_to_open[@]}"
+    (( ${#files_to_open[@]} > 0 )) && nvim "+${first_line_num:-1}" "${files_to_open[@]}"
 }
 
 alias gr="git rev-parse --show-toplevel"
@@ -254,6 +258,7 @@ alias tree='eza --group-directories-first --icons --tree'
 alias '..'='cd ..'
 alias '~'='cd ~'
 alias ff="readlink -f"
+alias vim=nvim
 
 # git aliases
 alias ga='git add'
