@@ -199,38 +199,6 @@ EOF
 
 alias gr="git rev-parse --show-toplevel"
 
-# js git: Search for files from git root using fzf, respecting .gitignore
-jsg() {
-    local git_root
-    git_root=$(git rev-parse --show-toplevel 2>/dev/null)
-
-    if [[ -z "$git_root" ]]; then
-        echo "Not inside a git repository." >&2
-        return 1
-    fi
-
-    # Run in a subshell to avoid changing the CWD of the main shell
-    (
-        cd "$git_root" || return 1
-
-        local selected_files
-        # Use git ls-files to get files respecting .gitignore
-        # Pipe to fzf for multi-selection
-        selected_files=$(git ls-files | fzf --multi)
-
-        if [[ -n "$selected_files" ]]; then
-            # Convert newline-separated string from fzf into a Zsh array
-            local -a files_to_open
-            files_to_open=("${(@f)selected_files}")
-
-            if [ "${#files_to_open[@]}" -gt 0 ]; then
-                # Open selected files (relative paths are correct since we are in git_root)
-                command cursor "${files_to_open[@]}"
-            fi
-        fi
-    )
-}
-
 # After entering these, you need to log out and log back in. On OSX, these make your keys get entered much faster!
 defaults write -g InitialKeyRepeat -int 10 # normal minimum is 15 (225 ms)
 defaults write -g KeyRepeat -int 1 # normal minimum is 2 (30 ms)
@@ -284,6 +252,22 @@ alias gss='git status -s'
 alias gst='git stash'
 alias gstp='git stash pop'
 alias glog='git log --stat'
+alias gw='git worktree'
+
+# git worktree switch using fzf
+gws() {
+    local selected
+    selected=$(git worktree list --porcelain | awk '
+        /^worktree / { path = substr($0, 10) }
+        /^branch /   { branch = substr($0, 8); sub("refs/heads/", "", branch); print path " [" branch "]" }
+        /^detached/  { print path " [detached]" }
+    ' | fzf --height 40% --reverse --border | awk '{print $1}')
+
+    if [[ -n "$selected" ]]; then
+        cd "$selected"
+    fi
+}
+alias ghs='gh run watch $(gh run list --json databaseId -q ".[0].databaseId")'
 
 function mkcd() {
 	mkdir $1 && cd $1
@@ -501,13 +485,14 @@ function cdi_and_accept() {
 zle -N cdi_and_accept
 bindkey ^J cdi_and_accept
 
-# Bind Ctrl+H to jsg (Note: This overrides default Ctrl+H behavior like backspace)
-jsg-widget() {
-  jsg
-  zle redisplay
+# Bind Ctrl+H to git worktree switch
+gws-widget() {
+  zle -I
+  gws
+  zle reset-prompt
 }
-zle -N jsg-widget
-bindkey '^H' jsg-widget
+zle -N gws-widget
+bindkey '^H' gws-widget
 
 export PATH="$PATH:/Users/jakobberg/workplace/flutter/bin"
 export PATH="$PATH:$(go env GOPATH)/bin"
@@ -545,7 +530,7 @@ export FZF_DEFAULT_OPTS="\
 --preview-window=hidden
 "
 
-alias ghs='gh run watch $(gh run list --json databaseId -q ".[0].databaseId")'
+alias c='g && claude'
 
 bindkey '^F' fzf-file-widget
 
