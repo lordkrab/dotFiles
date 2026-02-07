@@ -18,7 +18,7 @@ hyper - r : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Kindl
     skhd -k 'cmd - h'; \
   fi
 
-hyper - f : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Cursor" ]; then open -a '/Applications/Cursor.app'; else skhd -k 'cmd - h'; fi
+# hyper - f : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Cursor" ]; then open -a '/Applications/Cursor.app'; else skhd -k 'cmd - h'; fi
 
 hyper - s : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Brave Browser" ]; then \
     open -a /Applications/Brave\ Browser.app; \

@@ -257,14 +257,48 @@ alias gw='git worktree'
 # git worktree switch using fzf
 gws() {
     local selected
-    selected=$(git worktree list --porcelain | awk '
+    selected=$( (git worktree list --porcelain | awk '
         /^worktree / { path = substr($0, 10) }
         /^branch /   { branch = substr($0, 8); sub("refs/heads/", "", branch); print path " [" branch "]" }
         /^detached/  { print path " [detached]" }
-    ' | fzf --height 40% --reverse --border | awk '{print $1}')
+    '; echo "[NEW]") | fzf --height 40% --reverse --border)
 
-    if [[ -n "$selected" ]]; then
-        cd "$selected"
+    if [[ -z "$selected" ]]; then
+        return 0
+    fi
+
+    if [[ "$selected" == "[NEW]" ]]; then
+        # Get branch name
+        echo -n "Branch name: "
+        read branch_name </dev/tty
+        if [[ -z "$branch_name" ]]; then
+            echo "Aborted"
+            return 1
+        fi
+
+        # Get main worktree path for naming convention
+        local main_worktree
+        main_worktree=$(git worktree list --porcelain | awk '/^worktree / {print substr($0, 10); exit}')
+        local new_path="${main_worktree}-${branch_name}"
+
+        # Stash current changes
+        git stash
+
+        # Create new worktree
+        if ! git worktree add "$new_path" -b "$branch_name"; then
+            echo "Failed to create worktree, restoring stash"
+            git stash pop
+            return 1
+        fi
+
+        # Apply stash back to current worktree
+        git stash apply
+
+        # Switch to new worktree and apply stash there
+        cd "$new_path"
+        git stash pop
+    else
+        cd "$(echo "$selected" | awk '{print $1}')"
     fi
 }
 alias ghs='gh run watch $(gh run list --json databaseId -q ".[0].databaseId")'
@@ -485,14 +519,14 @@ function cdi_and_accept() {
 zle -N cdi_and_accept
 bindkey ^J cdi_and_accept
 
-# Bind Ctrl+H to git worktree switch
+# Bind Ctrl+N to git worktree switch
 gws-widget() {
   zle -I
   gws
   zle reset-prompt
 }
 zle -N gws-widget
-bindkey '^H' gws-widget
+bindkey '^N' gws-widget
 
 export PATH="$PATH:/Users/jakobberg/workplace/flutter/bin"
 export PATH="$PATH:$(go env GOPATH)/bin"
@@ -518,6 +552,19 @@ unset x
 
 function tmuxSourceAll() {
     tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index}' | xargs -I {} tmux send-keys -t {} 'source ~/.zshrc' Enter
+}
+
+# Capture tmux pane content and optionally grep
+# Usage: tmux-grep <window> <pane> [pattern]
+tmux-grep() {
+    local win="${1:-0}"
+    local pane="${2:-0}"
+    local pattern="$3"
+    if [[ -z "$pattern" ]]; then
+        tmux capture-pane -t "$win.$pane" -p -S -
+    else
+        tmux capture-pane -t "$win.$pane" -p -S - | grep "$pattern"
+    fi
 }
 
 export FZF_DEFAULT_COMMAND='fd --hidden --follow --exclude .git --exclude vendor'
