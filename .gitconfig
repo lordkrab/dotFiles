@@ -11,7 +11,7 @@ email = jmberg121@gmail.com
 [difftool]
 	prompt = false
 [color]
-	ui = always
+	ui = auto
 [delta] # brew install git-delta
     paging = always
     pager = "less -R -M"
