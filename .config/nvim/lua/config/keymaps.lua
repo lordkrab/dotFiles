@@ -12,3 +12,15 @@ vim.keymap.set("n", "<leader>wj", "<C-w>j", { desc = "Go to below window" })
 vim.keymap.set("n", "<leader>wk", "<C-w>k", { desc = "Go to above window" })
 vim.keymap.set("n", "<leader>wl", "<C-w>l", { desc = "Go to right window" })
 vim.keymap.set("n", "<leader>ww", "<C-w>w", { desc = "Cycle to next window" })
+
+-- Scroll viewport one line at a time
+vim.keymap.set("n", "<C-j>", "<C-e>", { desc = "Scroll down one line" })
+vim.keymap.set("n", "<C-k>", "<C-y>", { desc = "Scroll up one line" })
+
+-- Center cursor after half-page scroll
+vim.keymap.set("n", "<C-u>", "<C-u>zz", { desc = "Half-page up (centered)" })
+vim.keymap.set("n", "<C-d>", "<C-d>zz", { desc = "Half-page down (centered)" })
+
+-- Center cursor after search navigation
+vim.keymap.set("n", "n", "nzz", { desc = "Next search result (centered)" })
+vim.keymap.set("n", "N", "Nzz", { desc = "Prev search result (centered)" })
