@@ -8,6 +8,7 @@ email = jmberg121@gmail.com
 	rebase = true
 [diff]
 	tool = nvimdiff
+	context = 40
 [difftool]
 	prompt = false
 [color]

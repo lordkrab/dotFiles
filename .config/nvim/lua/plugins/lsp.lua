@@ -10,6 +10,9 @@ return {
           settings = {
             gopls = {
               buildFlags = { "-tags=integration" },
+              analyses = {
+                ST1020 = false,
+              },
             },
           },
         },

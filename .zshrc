@@ -253,6 +253,11 @@ alias gst='git stash'
 alias gstp='git stash pop'
 alias glog='git log --stat'
 alias gw='git worktree'
+alias gl='lazygit'
+
+# This makes codex ctrl + g open nvim for writing the prompt
+export VISUAL='nvim'
+export EDITOR='nvim'
 
 # git worktree switch using fzf
 gws() {
@@ -362,7 +367,7 @@ alias grep='grep --color=auto'
 # -----------------------------------------------------------------------------
 if [[ $(uname) == "Darwin" ]]; then
   # Brew
-  eval $(/usr/local/bin/brew shellenv)
+  eval $(/opt/homebrew/bin/brew shellenv)
 
   # Colors
   export LSCOLORS=gxBxhxDxfxhxhxhxhxcxcx
@@ -533,13 +538,19 @@ export PATH="$PATH:$(go env GOPATH)/bin"
 export PATH="$PATH:/Users/jakobberg/workplace/github/scripts"
 export PATH="$PATH:/Users/jakobberg/.swiftly/bin"
 
-# Load backend environment variables automatically if available.
-backend_env_file="$HOME/workplace/pos-monolith/backend/.env"
-if [[ -f "$backend_env_file" ]]; then
-  set -a
-  source "$backend_env_file"
-  set +a
-fi
+# Load environment variables from .env files automatically if available.
+_env_files=(
+  "$HOME/workplace/pos-monolith/backend/.env"
+  "$HOME/workplace/test-langgraph/.env"
+)
+for _env_file in "${_env_files[@]}"; do
+  if [[ -f "$_env_file" ]]; then
+    set -a
+    source "$_env_file"
+    set +a
+  fi
+done
+unset _env_file _env_files
 
 x=$(echo $PATH | tr ":" "\n" | sort | uniq | tr "\n" ":")
 export PATH="${x::-1}"
@@ -578,6 +589,8 @@ export FZF_DEFAULT_OPTS="\
 "
 
 alias c='g && claude'
+
+tp() { task "$@" rc.report.list.sort=project+/,description+ list; }
 
 bindkey '^F' fzf-file-widget
 

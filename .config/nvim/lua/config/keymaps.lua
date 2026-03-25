@@ -24,3 +24,6 @@ vim.keymap.set("n", "<C-d>", "<C-d>zz", { desc = "Half-page down (centered)" })
 -- Center cursor after search navigation
 vim.keymap.set("n", "n", "nzz", { desc = "Next search result (centered)" })
 vim.keymap.set("n", "N", "Nzz", { desc = "Prev search result (centered)" })
+
+-- LSP rename
+vim.keymap.set("n", "<leader>3", vim.lsp.buf.rename, { desc = "LSP Rename" })
