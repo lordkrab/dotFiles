@@ -50,8 +50,14 @@ hyper - e : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Mongo
     skhd -k 'cmd - h'; \
   fi
 
-hyper - c : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Google Chrome" ]; then \
-    open -a /Applications/Google\ Chrome.app; \
+hyper - x : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Passwords" ]; then \
+    open -a /System/Applications/Passwords.app; \
+  else \
+    skhd -k 'cmd - h'; \
+  fi
+
+hyper - c : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Calendar" ]; then \
+    open -a /System/Applications/Calendar.app; \
   else \
     skhd -k 'cmd - h'; \
   fi
