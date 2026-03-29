@@ -221,7 +221,9 @@ return {
       {
         "<leader>fg",
         function()
-          require("telescope.builtin").live_grep()
+          require("telescope.builtin").live_grep({
+            additional_args = { "--glob=!.g.dart", "--glob=!*.g.dart", "--glob=!*.freezed.dart" },
+          })
         end,
         desc = "Live grep",
       },
@@ -236,7 +238,7 @@ return {
         "<leader>fG",
         function()
           require("telescope.builtin").live_grep({
-            additional_args = { "--no-ignore" },
+            additional_args = { "--no-ignore", "--glob=!.g.dart", "--glob=!*.g.dart", "--glob=!*.freezed.dart" },
           })
         end,
         desc = "Grep all files",
@@ -265,7 +267,9 @@ return {
       {
         "<leader>/",
         function()
-          require("telescope.builtin").live_grep()
+          require("telescope.builtin").live_grep({
+            additional_args = { "--glob=!.g.dart", "--glob=!*.g.dart", "--glob=!*.freezed.dart" },
+          })
         end,
         desc = "Live grep",
       },
@@ -273,7 +277,7 @@ return {
         "<leader>?",
         function()
           require("telescope.builtin").live_grep({
-            additional_args = { "--no-ignore" },
+            additional_args = { "--no-ignore", "--glob=!.g.dart", "--glob=!*.g.dart", "--glob=!*.freezed.dart" },
           })
         end,
         desc = "Grep all files",
@@ -309,6 +313,10 @@ return {
     },
     opts = {
       defaults = {
+        file_ignore_patterns = {
+          "%.freezed%.dart$",
+          "%.g%.dart$",
+        },
         mappings = {
           i = {
             ["<C-h>"] = "which_key",
