@@ -7,6 +7,23 @@
 -- Or remove existing autocmds by their group name (which is prefixed with `lazyvim_` for the defaults)
 -- e.g. vim.api.nvim_del_augroup_by_name("lazyvim_wrap_spell")
 
+vim.filetype.add({
+  extension = {
+    m = "objc",
+    h = "objc",
+    mm = "objcpp",
+  },
+})
+
+vim.api.nvim_create_autocmd("FileType", {
+  group = vim.api.nvim_create_augroup("disable_objc_autoformat", { clear = true }),
+  pattern = { "objc", "objcpp" },
+  callback = function(args)
+    vim.b[args.buf].autoformat = false
+    vim.b[args.buf].disable_autoformat = true
+  end,
+})
+
 -- Auto-reload files changed outside of Neovim
 vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold", "CursorHoldI" }, {
   group = vim.api.nvim_create_augroup("auto_reload", { clear = true }),

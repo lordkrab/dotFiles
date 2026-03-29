@@ -6,6 +6,9 @@ return {
         enabled = false,
       },
       servers = {
+        clangd = {
+          cmd = { "/Users/jakobberg/.swiftly/bin/clangd" },
+        },
         gopls = {
           settings = {
             gopls = {
