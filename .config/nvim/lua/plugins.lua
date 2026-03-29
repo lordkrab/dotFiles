@@ -12,6 +12,77 @@ return {
     end,
   },
   {
+    "nvim-tree/nvim-web-devicons",
+    lazy = true,
+  },
+  {
+    "akinsho/bufferline.nvim",
+    dependencies = {
+      "catppuccin/nvim",
+      "nvim-tree/nvim-web-devicons",
+    },
+    lazy = false,
+    config = function()
+      require("bufferline").setup({
+        highlights = require("catppuccin.special.bufferline").get_theme(),
+        options = {
+          always_show_bufferline = true,
+          diagnostics = "nvim_lsp",
+          mode = "buffers",
+          offsets = {
+            {
+              filetype = "lazy",
+              text = "Lazy",
+              text_align = "center",
+            },
+          },
+          separator_style = "slant",
+          show_buffer_close_icons = false,
+          show_close_icon = false,
+        },
+      })
+    end,
+  },
+  {
+    "folke/which-key.nvim",
+    event = "VeryLazy",
+    opts = {
+      delay = 300,
+      preset = "modern",
+    },
+  },
+  {
+    "lewis6991/gitsigns.nvim",
+    event = { "BufReadPre", "BufNewFile" },
+    opts = {
+      current_line_blame = false,
+      signs = {
+        add = { text = "|" },
+        change = { text = "|" },
+        delete = { text = "_" },
+        topdelete = { text = "_" },
+        changedelete = { text = "~" },
+      },
+      on_attach = function(bufnr)
+        local gs = package.loaded.gitsigns
+        local map = function(mode, lhs, rhs, desc)
+          vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = desc })
+        end
+
+        map("n", "]h", function()
+          gs.nav_hunk("next")
+        end, "Next git hunk")
+        map("n", "[h", function()
+          gs.nav_hunk("prev")
+        end, "Previous git hunk")
+        map("n", "<leader>hp", gs.preview_hunk, "Preview git hunk")
+        map("n", "<leader>hb", function()
+          gs.blame_line({ full = true })
+        end, "Blame line")
+      end,
+    },
+  },
+  {
     "williamboman/mason.nvim",
     opts = {},
   },
@@ -22,7 +93,7 @@ return {
       "neovim/nvim-lspconfig",
     },
     config = function()
-      local servers = {
+      local mason_servers = {
         clangd = {
           cmd = { "/Users/jakobberg/.swiftly/bin/clangd" },
         },
@@ -48,13 +119,16 @@ return {
         pyright = {},
         ts_ls = {},
       }
+      local system_servers = {
+        dartls = {},
+      }
 
       require("mason-lspconfig").setup({
         automatic_enable = false,
-        ensure_installed = vim.tbl_keys(servers),
+        ensure_installed = vim.tbl_keys(mason_servers),
       })
 
-      for server, config in pairs(servers) do
+      for server, config in pairs(vim.tbl_extend("force", mason_servers, system_servers)) do
         vim.lsp.config(server, config)
         vim.lsp.enable(server)
       end
@@ -84,6 +158,7 @@ return {
         parser_install_dir = parser_install_dir,
         ensure_installed = {
           "bash",
+          "dart",
           "go",
           "gomod",
           "gosum",
@@ -151,6 +226,13 @@ return {
         desc = "Live grep",
       },
       {
+        "<leader>gd",
+        function()
+          require("telescope.builtin").git_status()
+        end,
+        desc = "Git diff files",
+      },
+      {
         "<leader>fG",
         function()
           require("telescope.builtin").live_grep({
@@ -195,6 +277,13 @@ return {
           })
         end,
         desc = "Grep all files",
+      },
+      {
+        "<leader>fb",
+        function()
+          require("telescope.builtin").buffers()
+        end,
+        desc = "Find buffers",
       },
       {
         "<leader>,",
