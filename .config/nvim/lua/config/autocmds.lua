@@ -1,31 +1,40 @@
--- Autocmds are automatically loaded on the VeryLazy event
--- Default autocmds that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/autocmds.lua
---
--- Add any additional autocmds here
--- with `vim.api.nvim_create_autocmd`
---
--- Or remove existing autocmds by their group name (which is prefixed with `lazyvim_` for the defaults)
--- e.g. vim.api.nvim_del_augroup_by_name("lazyvim_wrap_spell")
+local group = vim.api.nvim_create_augroup("jakobberg_nvim", { clear = true })
 
 vim.filetype.add({
   extension = {
-    m = "objc",
     h = "objc",
+    m = "objc",
     mm = "objcpp",
   },
 })
 
-vim.api.nvim_create_autocmd("FileType", {
-  group = vim.api.nvim_create_augroup("disable_objc_autoformat", { clear = true }),
-  pattern = { "objc", "objcpp" },
-  callback = function(args)
-    vim.b[args.buf].autoformat = false
-    vim.b[args.buf].disable_autoformat = true
+vim.api.nvim_create_autocmd("TextYankPost", {
+  group = group,
+  callback = function()
+    vim.highlight.on_yank()
   end,
 })
 
--- Auto-reload files changed outside of Neovim
 vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold", "CursorHoldI" }, {
-  group = vim.api.nvim_create_augroup("auto_reload", { clear = true }),
+  group = group,
   command = "if mode() != 'c' | checktime | endif",
+})
+
+vim.api.nvim_create_autocmd("LspAttach", {
+  group = group,
+  callback = function(event)
+    local telescope = require("telescope.builtin")
+    local map = function(keys, func, desc, mode)
+      vim.keymap.set(mode or "n", keys, func, { buffer = event.buf, desc = desc })
+    end
+
+    map("gd", telescope.lsp_definitions, "Go to definition")
+    map("gr", telescope.lsp_references, "Go to references")
+    map("gi", telescope.lsp_implementations, "Go to implementation")
+    map("K", vim.lsp.buf.hover, "Hover")
+    map("<leader>ca", vim.lsp.buf.code_action, "Code action", { "n", "v" })
+    map("<leader>ds", telescope.lsp_document_symbols, "Document symbols")
+    map("<leader>rn", vim.lsp.buf.rename, "Rename symbol")
+    map("<leader>ws", telescope.lsp_dynamic_workspace_symbols, "Workspace symbols")
+  end,
 })
