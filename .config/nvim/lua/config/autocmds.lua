@@ -1,5 +1,38 @@
 local group = vim.api.nvim_create_augroup("jakobberg_nvim", { clear = true })
 
+local function enable_lsp_completion(client, bufnr)
+  if not client:supports_method("textDocument/completion") then
+    return
+  end
+
+  local provider = client.server_capabilities.completionProvider or {}
+  local triggers = provider.triggerCharacters or {}
+  local seen = {}
+
+  for _, char in ipairs(triggers) do
+    seen[char] = true
+  end
+
+  for char in ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"):gmatch(".") do
+    if not seen[char] then
+      table.insert(triggers, char)
+      seen[char] = true
+    end
+  end
+
+  provider.triggerCharacters = triggers
+  client.server_capabilities.completionProvider = provider
+
+  vim.bo[bufnr].omnifunc = "v:lua.vim.lsp.omnifunc"
+  vim.lsp.completion.enable(true, client.id, bufnr, {
+    autotrigger = true,
+  })
+
+  vim.keymap.set("i", "<C-Space>", function()
+    vim.lsp.completion.get()
+  end, { buffer = bufnr, desc = "Trigger completion" })
+end
+
 vim.filetype.add({
   extension = {
     h = "objc",
@@ -41,9 +74,14 @@ vim.api.nvim_create_autocmd("FileType", {
 vim.api.nvim_create_autocmd("LspAttach", {
   group = group,
   callback = function(event)
+    local client = vim.lsp.get_client_by_id(event.data.client_id)
     local telescope = require("telescope.builtin")
     local map = function(keys, func, desc, mode)
       vim.keymap.set(mode or "n", keys, func, { buffer = event.buf, desc = desc })
+    end
+
+    if client then
+      enable_lsp_completion(client, event.buf)
     end
 
     map("gd", telescope.lsp_definitions, "Go to definition")

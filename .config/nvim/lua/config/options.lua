@@ -5,6 +5,7 @@ opt.background = "dark"
 
 opt.autoread = true
 opt.clipboard = "unnamedplus"
+opt.completeopt = { "menuone", "noselect", "popup" }
 opt.cursorline = true
 opt.hidden = true
 opt.hlsearch = true
