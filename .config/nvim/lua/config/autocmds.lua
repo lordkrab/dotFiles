@@ -75,6 +75,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
   group = group,
   callback = function(event)
     local client = vim.lsp.get_client_by_id(event.data.client_id)
+    local telescope_config = require("config.telescope")
     local telescope = require("telescope.builtin")
     local map = function(keys, func, desc, mode)
       vim.keymap.set(mode or "n", keys, func, { buffer = event.buf, desc = desc })
@@ -85,7 +86,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
     end
 
     map("gd", telescope.lsp_definitions, "Go to definition")
-    map("gr", telescope.lsp_references, "Go to references")
+    map("gr", telescope_config.lsp_references_paths, "Go to references")
     map("gi", telescope.lsp_implementations, "Go to implementation")
     map("K", vim.lsp.buf.hover, "Hover")
     map("<leader>ca", vim.lsp.buf.code_action, "Code action", { "n", "v" })
