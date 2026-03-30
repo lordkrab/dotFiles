@@ -20,6 +20,24 @@ vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold", "CursorHo
   command = "if mode() != 'c' | checktime | endif",
 })
 
+vim.api.nvim_create_autocmd("FileType", {
+  group = group,
+  pattern = "markdown",
+  callback = function(event)
+    local opt = vim.opt_local
+
+    opt.conceallevel = 2
+    opt.linebreak = true
+    opt.spell = true
+    opt.wrap = true
+
+    vim.keymap.set("n", "<leader>um", "<cmd>RenderMarkdown toggle<cr>", {
+      buffer = event.buf,
+      desc = "Toggle markdown render",
+    })
+  end,
+})
+
 vim.api.nvim_create_autocmd("LspAttach", {
   group = group,
   callback = function(event)

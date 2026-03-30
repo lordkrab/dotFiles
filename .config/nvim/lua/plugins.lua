@@ -256,6 +256,15 @@ return {
     end,
   },
   {
+    "MeanderingProgrammer/render-markdown.nvim",
+    ft = { "markdown" },
+    dependencies = {
+      "nvim-treesitter/nvim-treesitter",
+      "nvim-tree/nvim-web-devicons",
+    },
+    opts = {},
+  },
+  {
     "nvim-telescope/telescope.nvim",
     branch = "0.1.x",
     cmd = "Telescope",

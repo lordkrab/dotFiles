@@ -4,6 +4,7 @@ This config keeps Neovim intentionally small:
 
 - `lazy.nvim` for plugin management
 - `mason.nvim` and `nvim-lspconfig` for LSPs
+- `render-markdown.nvim` for in-buffer markdown rendering
 - `telescope.nvim` for navigation and search
 
 After linking this config into `~/.config/nvim`, open Neovim and run:
