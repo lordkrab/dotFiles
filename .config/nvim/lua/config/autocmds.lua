@@ -11,7 +11,7 @@ vim.filetype.add({
 vim.api.nvim_create_autocmd("TextYankPost", {
   group = group,
   callback = function()
-    vim.highlight.on_yank()
+    vim.hl.on_yank()
   end,
 })
 
@@ -34,6 +34,8 @@ vim.api.nvim_create_autocmd("LspAttach", {
     map("K", vim.lsp.buf.hover, "Hover")
     map("<leader>ca", vim.lsp.buf.code_action, "Code action", { "n", "v" })
     map("<leader>ds", telescope.lsp_document_symbols, "Document symbols")
+    map("<leader>ld", vim.lsp.buf.definition, "Go to definition (native)")
+    map("<leader>lr", vim.lsp.buf.references, "Go to references (native)")
     map("<leader>rn", vim.lsp.buf.rename, "Rename symbol")
     map("<leader>ws", telescope.lsp_dynamic_workspace_symbols, "Workspace symbols")
   end,

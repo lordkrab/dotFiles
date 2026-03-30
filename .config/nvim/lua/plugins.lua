@@ -16,6 +16,68 @@ return {
     lazy = true,
   },
   {
+    "nvim-tree/nvim-tree.lua",
+    dependencies = {
+      "nvim-tree/nvim-web-devicons",
+    },
+    cmd = {
+      "NvimTreeFindFile",
+      "NvimTreeFocus",
+      "NvimTreeOpen",
+      "NvimTreeToggle",
+    },
+    keys = {
+      {
+        "<leader>fe",
+        "<cmd>NvimTreeToggle<cr>",
+        desc = "Toggle file tree",
+      },
+      {
+        "<leader>fE",
+        "<cmd>NvimTreeFindFile<cr>",
+        desc = "Reveal file in tree",
+      },
+    },
+    config = function()
+      require("nvim-tree").setup({
+        actions = {
+          open_file = {
+            quit_on_open = false,
+          },
+        },
+        filters = {
+          custom = {
+            "%.g%.dart$",
+            "%.freezed%.dart$",
+          },
+        },
+        git = {
+          ignore = false,
+        },
+        renderer = {
+          group_empty = true,
+          icons = {
+            show = {
+              file = true,
+              folder = true,
+              folder_arrow = true,
+              git = true,
+            },
+          },
+        },
+        sync_root_with_cwd = true,
+        update_focused_file = {
+          enable = true,
+          update_root = true,
+        },
+        view = {
+          preserve_window_proportions = true,
+          width = 34,
+        },
+      })
+    end,
+  },
+  {
     "akinsho/bufferline.nvim",
     dependencies = {
       "catppuccin/nvim",
@@ -120,7 +182,15 @@ return {
         ts_ls = {},
       }
       local system_servers = {
-        dartls = {},
+        dartls = {
+          init_options = {
+            closingLabels = true,
+            flutterOutline = true,
+            onlyAnalyzeProjectsWithOpenFiles = false,
+            outline = true,
+            suggestFromUnimportedLibraries = true,
+          },
+        },
       }
 
       require("mason-lspconfig").setup({
