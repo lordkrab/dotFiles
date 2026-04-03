@@ -137,6 +137,7 @@ return {
         map("n", "[h", function()
           gs.nav_hunk("prev")
         end, "Previous git hunk")
+        map("n", "<leader>hd", "<cmd>Gitsigns diffthis<cr>", "Diff current file")
         map("n", "<leader>hp", gs.preview_hunk, "Preview git hunk")
         map("n", "<leader>hb", function()
           gs.blame_line({ full = true })

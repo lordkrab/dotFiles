@@ -1,4 +1,7 @@
 local group = vim.api.nvim_create_augroup("jakobberg_nvim", { clear = true })
+local uv = vim.uv or vim.loop
+local last_workspace_check = 0
+local workspace_check_interval = 2000
 
 local function enable_lsp_completion(client, bufnr)
   if not client:supports_method("textDocument/completion") then
@@ -33,6 +36,39 @@ local function enable_lsp_completion(client, bufnr)
   end, { buffer = bufnr, desc = "Trigger completion" })
 end
 
+local function is_reloadable_buffer(bufnr)
+  return vim.api.nvim_buf_is_loaded(bufnr)
+    and vim.bo[bufnr].buflisted
+    and vim.bo[bufnr].buftype == ""
+    and vim.api.nvim_buf_get_name(bufnr) ~= ""
+    and not vim.bo[bufnr].modified
+end
+
+local function check_buffer(bufnr)
+  if not is_reloadable_buffer(bufnr) then
+    return
+  end
+
+  vim.cmd(("silent! checktime %d"):format(bufnr))
+end
+
+local function check_workspace_buffers(force)
+  if vim.fn.mode() == "c" then
+    return
+  end
+
+  local now = uv.now()
+  if not force and now - last_workspace_check < workspace_check_interval then
+    return
+  end
+
+  last_workspace_check = now
+
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    check_buffer(bufnr)
+  end
+end
+
 vim.filetype.add({
   extension = {
     h = "objc",
@@ -48,9 +84,18 @@ vim.api.nvim_create_autocmd("TextYankPost", {
   end,
 })
 
-vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold", "CursorHoldI" }, {
+vim.api.nvim_create_autocmd("BufEnter", {
   group = group,
-  command = "if mode() != 'c' | checktime | endif",
+  callback = function(event)
+    check_buffer(event.buf)
+  end,
+})
+
+vim.api.nvim_create_autocmd({ "FocusGained", "CursorHold", "CursorHoldI" }, {
+  group = group,
+  callback = function(event)
+    check_workspace_buffers(event.event == "FocusGained")
+  end,
 })
 
 vim.api.nvim_create_autocmd("FileType", {
