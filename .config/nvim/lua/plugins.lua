@@ -207,53 +207,59 @@ return {
   },
   {
     "nvim-treesitter/nvim-treesitter",
-    branch = "master",
+    branch = "main",
     build = ":TSUpdate",
     lazy = false,
     config = function()
-      local parser_install_dir = vim.fn.stdpath("data") .. "/site"
-      vim.opt.runtimepath:append(parser_install_dir)
-
-      local ok, configs = pcall(require, "nvim-treesitter.configs")
+      local ok, treesitter = pcall(require, "nvim-treesitter")
       if not ok then
         vim.schedule(function()
           vim.notify(
-            "nvim-treesitter is installed on an incompatible branch. Run :Lazy sync to switch to master.",
+            "nvim-treesitter failed to load. Run :Lazy sync and then :TSUpdate.",
             vim.log.levels.WARN
           )
         end)
         return
       end
 
-      configs.setup({
-        parser_install_dir = parser_install_dir,
-        ensure_installed = {
-          "bash",
-          "dart",
-          "go",
-          "gomod",
-          "gosum",
-          "gowork",
-          "json",
-          "lua",
-          "markdown",
-          "markdown_inline",
-          "python",
-          "query",
-          "tsx",
-          "typescript",
-          "vim",
-          "vimdoc",
-          "yaml",
-        },
-        highlight = {
-          additional_vim_regex_highlighting = false,
-          enable = true,
-        },
-        indent = {
-          enable = true,
-        },
+      local languages = {
+        "bash",
+        "dart",
+        "go",
+        "gomod",
+        "gosum",
+        "gowork",
+        "json",
+        "lua",
+        "markdown",
+        "markdown_inline",
+        "python",
+        "query",
+        "tsx",
+        "typescript",
+        "vim",
+        "vimdoc",
+        "yaml",
+      }
+
+      treesitter.setup({
+        install_dir = vim.fn.stdpath("data") .. "/site",
       })
+      treesitter.install(languages)
+
+      local group = vim.api.nvim_create_augroup("nvim_treesitter_highlight", { clear = true })
+      vim.api.nvim_create_autocmd("FileType", {
+        group = group,
+        callback = function(event)
+          pcall(vim.treesitter.start, event.buf)
+        end,
+      })
+
+      for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.bo[bufnr].filetype ~= "" then
+          pcall(vim.treesitter.start, bufnr)
+        end
+      end
     end,
   },
   {
@@ -267,7 +273,7 @@ return {
   },
   {
     "nvim-telescope/telescope.nvim",
-    branch = "0.1.x",
+    branch = "master",
     cmd = "Telescope",
     dependencies = {
       "nvim-lua/plenary.nvim",
