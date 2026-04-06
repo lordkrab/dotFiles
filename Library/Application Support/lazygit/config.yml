@@ -1,4 +1,5 @@
 git:
+  diffContextSize: 50
   pagers:
     - pager: delta --paging=never --line-numbers
       colorArg: always

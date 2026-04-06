@@ -405,7 +405,7 @@ return {
             ["<Esc>"] = "close",
           },
         },
-        path_display = { "truncate" },
+        path_display = {},
         prompt_prefix = "> ",
         selection_caret = "> ",
       },

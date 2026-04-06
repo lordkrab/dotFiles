@@ -1,36 +1,35 @@
 local M = {}
 
-local function format_path(path, cwd)
-  if not path or path == "" then
-    return ""
-  end
-
-  local root = vim.fs.normalize(cwd or vim.loop.cwd())
-  local normalized = vim.fs.normalize(path)
-  local prefix = root .. "/"
-
-  if normalized == root then
-    return vim.fs.basename(normalized)
-  end
-
-  if normalized:sub(1, #prefix) == prefix then
-    return normalized:sub(#prefix + 1)
-  end
-
-  return vim.fn.fnamemodify(normalized, ":~")
-end
-
 local function lsp_references_entry_maker(opts)
+  local entry_display = require("telescope.pickers.entry_display")
   local make_entry = require("telescope.make_entry")
-  local entry_maker = make_entry.gen_from_quickfix(vim.tbl_extend("force", opts or {}, {
-    show_line = false,
-  }))
+  local utils = require("telescope.utils")
+  local entry_maker = make_entry.gen_from_quickfix(vim.tbl_extend("force", {
+    trim_text = true,
+  }, opts or {}))
+
+  local displayer = entry_display.create({
+    separator = "  ",
+    items = {
+      {},
+      { remaining = true },
+    },
+  })
+
+  local function make_display(entry)
+    local text = entry.text or ""
+    text = text:gsub("^%s*(.-)%s*$", "%1")
+    text = text:gsub(".* | ", "")
+
+    return displayer({
+      { string.format("%s:%d:%d", utils.transform_path(opts, entry.filename), entry.lnum, entry.col), "TelescopeResultsIdentifier" },
+      text,
+    })
+  end
 
   return function(entry)
     local item = entry_maker(entry)
-
-    item.display = string.format("%s:%d", format_path(item.filename, opts.cwd), item.lnum)
-
+    item.display = make_display
     return item
   end
 end
