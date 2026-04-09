@@ -1,3 +1,43 @@
+local function scoped_live_grep()
+  local scopes_by_key = {
+    ["1"] = { name = "all" },
+    ["2"] = { name = "backend", search_dirs = { "backend" } },
+    ["3"] = { name = "frontend", search_dirs = { "frontend" } },
+    ["4"] = { name = "web_admin", search_dirs = { "web_admin" } },
+  }
+
+  vim.api.nvim_echo({
+    { "Live grep scope: ", "Normal" },
+    { "[1] all ", "Identifier" },
+    { "[2] backend ", "Identifier" },
+    { "[3] frontend ", "Identifier" },
+    { "[4] web_admin", "Identifier" },
+  }, false, {})
+
+  local ok, key = pcall(vim.fn.getcharstr)
+  vim.cmd.redraw()
+  if not ok then
+    return
+  end
+
+  local scope = scopes_by_key[key]
+  if not scope then
+    return
+  end
+
+  require("telescope.builtin").live_grep({
+    prompt_title = scope.name == "all" and "Live Grep" or ("Live Grep (" .. scope.name .. ")"),
+    search_dirs = scope.search_dirs,
+    additional_args = {
+      "--glob=!.g.dart",
+      "--glob=!*.g.dart",
+      "--glob=!*.freezed.dart",
+      "--glob=!backend/vendor/**",
+      "--glob=!backend/docs/**",
+    },
+  })
+end
+
 return {
   {
     "catppuccin/nvim",
@@ -308,7 +348,13 @@ return {
         "<leader>fg",
         function()
           require("telescope.builtin").live_grep({
-            additional_args = { "--glob=!.g.dart", "--glob=!*.g.dart", "--glob=!*.freezed.dart" },
+            additional_args = {
+              "--glob=!.g.dart",
+              "--glob=!*.g.dart",
+              "--glob=!*.freezed.dart",
+              "--glob=!backend/vendor/**",
+              "--glob=!backend/docs/**",
+            },
           })
         end,
         desc = "Live grep",
@@ -324,7 +370,14 @@ return {
         "<leader>fG",
         function()
           require("telescope.builtin").live_grep({
-            additional_args = { "--no-ignore", "--glob=!.g.dart", "--glob=!*.g.dart", "--glob=!*.freezed.dart" },
+            additional_args = {
+              "--no-ignore",
+              "--glob=!.g.dart",
+              "--glob=!*.g.dart",
+              "--glob=!*.freezed.dart",
+              "--glob=!backend/vendor/**",
+              "--glob=!backend/docs/**",
+            },
           })
         end,
         desc = "Grep all files",
@@ -353,17 +406,22 @@ return {
       {
         "<leader>/",
         function()
-          require("telescope.builtin").live_grep({
-            additional_args = { "--glob=!.g.dart", "--glob=!*.g.dart", "--glob=!*.freezed.dart" },
-          })
+          scoped_live_grep()
         end,
-        desc = "Live grep",
+        desc = "Live grep by scope",
       },
       {
         "<leader>?",
         function()
           require("telescope.builtin").live_grep({
-            additional_args = { "--no-ignore", "--glob=!.g.dart", "--glob=!*.g.dart", "--glob=!*.freezed.dart" },
+            additional_args = {
+              "--no-ignore",
+              "--glob=!.g.dart",
+              "--glob=!*.g.dart",
+              "--glob=!*.freezed.dart",
+              "--glob=!backend/vendor/**",
+              "--glob=!backend/docs/**",
+            },
           })
         end,
         desc = "Grep all files",
