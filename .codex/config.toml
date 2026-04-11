@@ -1,0 +1,25 @@
+model = "gpt-5.4"
+personality = "pragmatic"
+model_reasoning_effort = "medium"
+plan_mode_reasoning_effort = "high"
+service_tier = "fast"
+approval_policy = "on-request"
+sandbox_mode = "read-only"
+
+[projects."/Users/jakobberg/workplace/pos-monolith"]
+trust_level = "trusted"
+
+[projects."/Users/jakobberg/workplace/zeroindex"]
+trust_level = "trusted"
+
+[projects."/Users/jakobberg/dotFiles"]
+trust_level = "trusted"
+
+[notice]
+hide_rate_limit_model_nudge = true
+
+[notice.model_migrations]
+gpt-5-codex = "gpt-5.3-codex"
+
+[tui]
+status_line = ["model-with-reasoning", "context-remaining", "current-dir"]
