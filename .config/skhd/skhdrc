@@ -38,6 +38,12 @@ hyper - v : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Disco
     skhd -k 'cmd - h'; \
   fi
 
+hyper - d : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Xcode" ]; then \
+    open -a '/Applications/Xcode.app'; \
+  else \
+    skhd -k 'cmd - h'; \
+  fi
+
 hyper - m : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Spotify" ]; then \
     open -a '/Applications/Spotify.app'; \
   else \
