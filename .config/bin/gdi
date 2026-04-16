@@ -1,0 +1,560 @@
+#!/usr/bin/env python3
+
+import argparse
+import curses
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+
+STATE_DIR_NAME = "gdi"
+STATE_FILE_NAME = "selection.json"
+DIFF_FILE_NAME = "current.diff"
+
+
+def run_command(args, cwd=None, check=True, input_text=None, env=None):
+    return subprocess.run(
+        args,
+        cwd=cwd,
+        check=check,
+        text=True,
+        capture_output=True,
+        input=input_text,
+        env=env,
+    )
+
+
+def git_root(start_dir):
+    result = run_command(["git", "rev-parse", "--show-toplevel"], cwd=start_dir)
+    return Path(result.stdout.strip()).resolve()
+
+
+def git_dir(repo_root):
+    result = run_command(["git", "rev-parse", "--git-dir"], cwd=repo_root)
+    raw_path = Path(result.stdout.strip())
+    if raw_path.is_absolute():
+        return raw_path.resolve()
+    return (repo_root / raw_path).resolve()
+
+
+def ensure_state_paths(repo_root):
+    state_dir = git_dir(repo_root) / STATE_DIR_NAME
+    state_dir.mkdir(parents=True, exist_ok=True)
+    return state_dir / STATE_FILE_NAME, state_dir / DIFF_FILE_NAME
+
+
+def relpath_from_arg(repo_root, cwd, raw_arg):
+    candidate = Path(raw_arg).expanduser()
+    if not candidate.is_absolute():
+        candidate = (cwd / candidate).resolve()
+    else:
+        candidate = candidate.resolve()
+
+    try:
+        relative = candidate.relative_to(repo_root)
+    except ValueError:
+        raise ValueError(f"path is outside repo: {raw_arg}")
+
+    return "." if str(relative) == "." else relative.as_posix()
+
+
+def unique(items):
+    seen = set()
+    output = []
+    for item in items:
+        if item and item not in seen:
+            seen.add(item)
+            output.append(item)
+    return output
+
+
+def changed_files_for_scope(repo_root, scope):
+    results = []
+    commands = [
+        ["git", "diff", "--name-only", "--", scope],
+        ["git", "diff", "--cached", "--name-only", "--", scope],
+        ["git", "ls-files", "--others", "--exclude-standard", "--", scope],
+    ]
+    for command in commands:
+        completed = run_command(command, cwd=repo_root, check=False)
+        if completed.returncode not in (0, 1):
+            raise RuntimeError(completed.stderr.strip() or "git command failed")
+        results.extend(line.strip() for line in completed.stdout.splitlines())
+    return unique(results)
+
+
+def build_candidates(repo_root, cwd, raw_args):
+    raw_args = raw_args or ["."]
+    candidates = []
+    warnings = []
+
+    for raw_arg in raw_args:
+        try:
+            relative = relpath_from_arg(repo_root, cwd, raw_arg)
+        except ValueError as exc:
+            warnings.append(str(exc))
+            continue
+
+        absolute = repo_root if relative == "." else (repo_root / relative)
+        if relative == "." or absolute.is_dir():
+            candidates.extend(changed_files_for_scope(repo_root, relative))
+        else:
+            candidates.append(relative)
+
+    return unique(candidates), warnings
+
+
+def load_state(state_path):
+    if not state_path.exists():
+        return None
+    try:
+        return json.loads(state_path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def write_atomic(path, content):
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    tmp_path.write_text(content)
+    tmp_path.replace(path)
+
+
+def is_untracked(repo_root, path):
+    completed = run_command(
+        ["git", "ls-files", "--others", "--exclude-standard", "--error-unmatch", "--", path],
+        cwd=repo_root,
+        check=False,
+    )
+    return completed.returncode == 0
+
+
+def has_head_commit(repo_root):
+    completed = run_command(
+        ["git", "rev-parse", "--verify", "HEAD"],
+        cwd=repo_root,
+        check=False,
+    )
+    return completed.returncode == 0
+
+
+def save_state(state_path, repo_root, selected, candidates, input_args, context_lines):
+    payload = {
+        "repo_root": str(repo_root),
+        "selected": selected,
+        "candidates": candidates,
+        "input_args": input_args,
+        "context_lines": context_lines,
+    }
+    write_atomic(state_path, json.dumps(payload, indent=2) + "\n")
+
+
+def unified_arg(context_lines):
+    if context_lines is None:
+        return []
+    return [f"-U{context_lines}"]
+
+
+def build_raw_diff(repo_root, selected, context_lines, color=False):
+    if not selected:
+        return ""
+
+    tracked = []
+    untracked = []
+    for file_path in selected:
+        if is_untracked(repo_root, file_path):
+            untracked.append(file_path)
+        else:
+            tracked.append(file_path)
+
+    chunks = []
+
+    if tracked and has_head_commit(repo_root):
+        tracked_command = ["git", "diff"]
+        if color:
+            tracked_command.append("--color=always")
+        tracked_command.extend([*unified_arg(context_lines), "HEAD", "--", *tracked])
+        completed = run_command(
+            tracked_command,
+            cwd=repo_root,
+            check=False,
+        )
+        if completed.returncode not in (0, 1):
+            raise RuntimeError(completed.stderr.strip() or "git diff failed")
+        if completed.stdout:
+            chunks.append(completed.stdout.rstrip("\n"))
+
+    for file_path in untracked:
+        untracked_command = ["git", "diff", "--no-index"]
+        if color:
+            untracked_command.append("--color=always")
+        untracked_command.extend([*unified_arg(context_lines), "--", "/dev/null", file_path])
+        completed = run_command(
+            untracked_command,
+            cwd=repo_root,
+            check=False,
+        )
+        if completed.returncode not in (0, 1):
+            raise RuntimeError(completed.stderr.strip() or f"git diff failed for {file_path}")
+        if completed.stdout:
+            chunks.append(completed.stdout.rstrip("\n"))
+
+    return "\n\n".join(chunk for chunk in chunks if chunk)
+
+
+def wants_delta(repo_root):
+    if shutil.which("delta") is None:
+        return False
+
+    completed = run_command(
+        ["git", "config", "--get", "core.pager"],
+        cwd=repo_root,
+        check=False,
+    )
+    return completed.returncode == 0 and "delta" in completed.stdout
+
+
+def render_pretty_diff(repo_root, raw_diff):
+    if not raw_diff:
+        return raw_diff
+
+    if not wants_delta(repo_root):
+        return raw_diff
+
+    width, height = shutil.get_terminal_size((120, 40))
+    env = os.environ.copy()
+    env["DELTA_PAGER"] = "cat"
+    env["COLUMNS"] = str(width)
+    env["LINES"] = str(height)
+
+    completed = run_command(
+        ["delta", "--paging=never"],
+        cwd=repo_root,
+        check=False,
+        input_text=raw_diff,
+        env=env,
+    )
+    if completed.returncode != 0 or not completed.stdout:
+        return raw_diff
+    return completed.stdout.rstrip("\n")
+
+
+def write_diff_file(repo_root, diff_path, context_lines, selected):
+    diff_text = build_raw_diff(repo_root, selected, context_lines, color=False)
+    if not diff_text:
+        diff_text = "No diff for selected files.\n" if selected else "No files selected.\n"
+    elif not diff_text.endswith("\n"):
+        diff_text += "\n"
+    write_atomic(diff_path, diff_text)
+
+
+def build_view_output(repo_root, state_path, context_override):
+    state = load_state(state_path)
+    if not state or state.get("repo_root") != str(repo_root):
+        return "Run `gdi select ...` in the left tmux pane.\n"
+
+    selected = state.get("selected", [])
+    if not selected:
+        return "No files selected.\n"
+
+    context_lines = context_override if context_override is not None else state.get("context_lines")
+    raw_diff = build_raw_diff(repo_root, selected, context_lines, color=False)
+    if not raw_diff:
+        return "No diff for selected files.\n"
+
+    return render_pretty_diff(repo_root, raw_diff) + "\n"
+
+
+class SelectorApp:
+    def __init__(self, repo_root, state_path, diff_path, input_args, context_lines):
+        self.repo_root = repo_root
+        self.state_path = state_path
+        self.diff_path = diff_path
+        self.input_args = input_args or ["."]
+        self.cwd = Path.cwd().resolve()
+        self.candidates, self.warnings = build_candidates(repo_root, self.cwd, self.input_args)
+        self.context_lines = self.initial_context(context_lines)
+        self.selected = self.initial_selection()
+        self.cursor = 0
+        self.scroll = 0
+        self.message = ""
+        self.persist()
+
+    def existing_state(self):
+        state = load_state(self.state_path)
+        if (
+            state
+            and state.get("repo_root") == str(self.repo_root)
+            and state.get("input_args") == self.input_args
+        ):
+            return state
+        return None
+
+    def initial_context(self, context_lines):
+        if context_lines is not None:
+            return context_lines
+        state = self.existing_state()
+        if state:
+            return state.get("context_lines")
+        return None
+
+    def initial_selection(self):
+        state = self.existing_state()
+        if state:
+            valid = [item for item in state.get("selected", []) if item in self.candidates]
+            if valid:
+                return valid
+        return list(self.candidates)
+
+    def persist(self):
+        save_state(
+            self.state_path,
+            self.repo_root,
+            self.selected,
+            self.candidates,
+            self.input_args,
+            self.context_lines,
+        )
+        write_diff_file(self.repo_root, self.diff_path, self.context_lines, self.selected)
+
+    def refresh(self):
+        previous = set(self.selected)
+        self.candidates, warnings = build_candidates(self.repo_root, self.cwd, self.input_args)
+        self.warnings = warnings
+        self.selected = [item for item in self.candidates if item in previous]
+        if not self.selected and self.candidates:
+            self.selected = list(self.candidates)
+        self.cursor = min(self.cursor, max(len(self.candidates) - 1, 0))
+        self.scroll = min(self.scroll, self.cursor)
+        self.persist()
+        self.message = "refreshed"
+
+    def toggle_current(self):
+        if not self.candidates:
+            return
+        current = self.candidates[self.cursor]
+        if current in self.selected:
+            self.selected = [item for item in self.selected if item != current]
+        else:
+            self.selected.append(current)
+        self.persist()
+
+    def select_all(self):
+        self.selected = list(self.candidates)
+        self.persist()
+        self.message = "selected all"
+
+    def select_none(self):
+        self.selected = []
+        self.persist()
+        self.message = "cleared selection"
+
+    def move(self, delta):
+        if not self.candidates:
+            return
+        self.cursor = max(0, min(len(self.candidates) - 1, self.cursor + delta))
+
+    def ensure_visible(self, height):
+        if self.cursor < self.scroll:
+            self.scroll = self.cursor
+        if self.cursor >= self.scroll + height:
+            self.scroll = self.cursor - height + 1
+
+    def draw(self, stdscr):
+        stdscr.erase()
+        height, width = stdscr.getmaxyx()
+        selected_count = len(self.selected)
+        header = f"gdi  repo: {self.repo_root.name}  selected: {selected_count}/{len(self.candidates)}"
+        keys = "j/k or arrows move | space toggle | a all | n none | r refresh | q quit"
+        context_label = "git default" if self.context_lines is None else str(self.context_lines)
+        view_line = f"right pane: `nvim -R $(gdi path)` or `gdi view`  context: {context_label}"
+
+        stdscr.addnstr(0, 0, header, width - 1, curses.A_BOLD)
+        stdscr.addnstr(1, 0, keys, width - 1)
+        stdscr.addnstr(2, 0, view_line, width - 1)
+
+        if self.warnings:
+            stdscr.addnstr(3, 0, self.warnings[0], width - 1, curses.A_DIM)
+            list_top = 5
+        else:
+            list_top = 4
+
+        available = max(height - list_top - 1, 1)
+        self.ensure_visible(available)
+
+        if not self.candidates:
+            stdscr.addnstr(list_top, 0, "No candidate files found.", width - 1)
+        else:
+            visible = self.candidates[self.scroll : self.scroll + available]
+            selected_lookup = set(self.selected)
+            for row, file_path in enumerate(visible, start=list_top):
+                index = self.scroll + (row - list_top)
+                marker = "[x]" if file_path in selected_lookup else "[ ]"
+                line = f"{marker} {file_path}"
+                attr = curses.A_REVERSE if index == self.cursor else curses.A_NORMAL
+                stdscr.addnstr(row, 0, line, width - 1, attr)
+
+        if self.message:
+            stdscr.addnstr(height - 1, 0, self.message, width - 1, curses.A_DIM)
+
+        stdscr.refresh()
+
+    def run(self, stdscr):
+        curses.curs_set(0)
+        stdscr.keypad(True)
+
+        while True:
+            self.draw(stdscr)
+            key = stdscr.getch()
+            self.message = ""
+
+            if key in (ord("q"), 27):
+                return
+            if key in (curses.KEY_UP, ord("k")):
+                self.move(-1)
+            elif key in (curses.KEY_DOWN, ord("j")):
+                self.move(1)
+            elif key in (ord(" "), 10, 13):
+                self.toggle_current()
+            elif key == ord("a"):
+                self.select_all()
+            elif key == ord("n"):
+                self.select_none()
+            elif key == ord("r"):
+                self.refresh()
+
+
+def command_select(args):
+    repo_root = git_root(Path.cwd())
+    state_path, diff_path = ensure_state_paths(repo_root)
+    app = SelectorApp(repo_root, state_path, diff_path, args.paths, args.unified_context)
+    curses.wrapper(app.run)
+
+
+def command_view(args):
+    repo_root = git_root(Path.cwd())
+    state_path, _ = ensure_state_paths(repo_root)
+    last_output = None
+
+    while True:
+        output = build_view_output(repo_root, state_path, args.unified_context)
+        if output != last_output:
+            sys.stdout.write("\x1b[2J\x1b[H")
+            sys.stdout.write(output)
+            if not output.endswith("\n"):
+                sys.stdout.write("\n")
+            sys.stdout.flush()
+            last_output = output
+
+        if args.once:
+            return
+        time.sleep(args.interval)
+
+
+def command_path(_args):
+    repo_root = git_root(Path.cwd())
+    _, diff_path = ensure_state_paths(repo_root)
+    print(diff_path)
+
+
+def command_render(args):
+    repo_root = git_root(Path.cwd())
+    state_path, diff_path = ensure_state_paths(repo_root)
+    state = load_state(state_path)
+    if not state or state.get("repo_root") != str(repo_root):
+        write_atomic(diff_path, "Run `gdi select ...` in the left tmux pane.\n")
+        print(diff_path)
+        return
+
+    selected = state.get("selected", [])
+    context_lines = args.unified_context if args.unified_context is not None else state.get("context_lines")
+    write_diff_file(repo_root, diff_path, context_lines, selected)
+    print(diff_path)
+
+
+def command_nvim(args):
+    repo_root = git_root(Path.cwd())
+    state_path, diff_path = ensure_state_paths(repo_root)
+    state = load_state(state_path)
+    if state and state.get("repo_root") == str(repo_root):
+        selected = state.get("selected", [])
+        context_lines = args.unified_context if args.unified_context is not None else state.get("context_lines")
+        write_diff_file(repo_root, diff_path, context_lines, selected)
+    else:
+        write_atomic(diff_path, "Run `gdi select ...` in the left tmux pane.\n")
+
+    os.execvp(
+        "nvim",
+        [
+            "nvim",
+            "-R",
+            "-c",
+            "set autoread",
+            "-c",
+            "set updatetime=300",
+            "-c",
+            "autocmd CursorHold,CursorHoldI,BufEnter,FocusGained <buffer> checktime",
+            str(diff_path),
+        ],
+    )
+
+
+def build_parser():
+    parser = argparse.ArgumentParser(description="tmux-friendly git diff selector")
+    subparsers = parser.add_subparsers(dest="command")
+
+    select_parser = subparsers.add_parser("select", help="open the selector TUI")
+    select_parser.add_argument("-U", dest="unified_context", type=int, help="git diff context lines")
+    select_parser.add_argument("paths", nargs="*", help="files or directories to include")
+    select_parser.set_defaults(func=command_select)
+
+    view_parser = subparsers.add_parser("view", help="render the selected diff in the current pane")
+    view_parser.add_argument("-U", dest="unified_context", type=int, help="git diff context lines override")
+    view_parser.add_argument("--interval", type=float, default=0.4, help="refresh interval in seconds")
+    view_parser.add_argument("--once", action="store_true", help="render once and exit")
+    view_parser.set_defaults(func=command_view)
+
+    path_parser = subparsers.add_parser("path", help="print the diff file path for nvim")
+    path_parser.set_defaults(func=command_path)
+
+    render_parser = subparsers.add_parser("render", help="rewrite the diff file from the saved selection")
+    render_parser.add_argument("-U", dest="unified_context", type=int, help="git diff context lines override")
+    render_parser.set_defaults(func=command_render)
+
+    nvim_parser = subparsers.add_parser("nvim", help="open the current diff file in nvim with autoreload")
+    nvim_parser.add_argument("-U", dest="unified_context", type=int, help="git diff context lines override")
+    nvim_parser.set_defaults(func=command_nvim)
+
+    return parser
+
+
+def main():
+    parser = build_parser()
+    argv = sys.argv[1:]
+    if not argv or argv[0] not in {"select", "view", "path", "render", "nvim", "-h", "--help"}:
+        argv = ["select", *argv]
+
+    args = parser.parse_args(argv)
+    if not hasattr(args, "func"):
+        parser.print_help()
+        return 1
+
+    try:
+        args.func(args)
+    except subprocess.CalledProcessError as exc:
+        stderr = exc.stderr.strip() if exc.stderr else str(exc)
+        print(stderr or str(exc), file=sys.stderr)
+        return exc.returncode or 1
+    except KeyboardInterrupt:
+        return 130
+    except Exception as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

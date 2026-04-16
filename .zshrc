@@ -601,3 +601,7 @@ export POS_AGENT_BACKEND_BASE_URL="http://localhost:8080"
 autoload -U +X bashcompinit && bashcompinit
 complete -o nospace -C /opt/homebrew/bin/terraform terraform
 export PATH="$HOME/.local/bin:$PATH"
+
+_dotfiles_root="${${(%):-%N}:A:h}"
+[[ -f "$_dotfiles_root/.config/zsh/gdi.zsh" ]] && source "$_dotfiles_root/.config/zsh/gdi.zsh"
+unset _dotfiles_root
