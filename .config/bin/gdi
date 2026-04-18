@@ -280,6 +280,8 @@ class SelectorApp:
         self.selected = self.initial_selection()
         self.cursor = 0
         self.scroll = 0
+        self.query = ""
+        self.search_mode = False
         self.message = ""
         self.persist()
 
@@ -320,6 +322,16 @@ class SelectorApp:
         )
         write_diff_file(self.repo_root, self.diff_path, self.context_lines, self.selected)
 
+    def filtered_candidates(self):
+        if not self.query:
+            return self.candidates
+        query = self.query.lower()
+        return [item for item in self.candidates if query in item.lower()]
+
+    def reset_view(self):
+        self.cursor = 0
+        self.scroll = 0
+
     def refresh(self):
         previous = set(self.selected)
         self.candidates, warnings = build_candidates(self.repo_root, self.cwd, self.input_args)
@@ -327,15 +339,16 @@ class SelectorApp:
         self.selected = [item for item in self.candidates if item in previous]
         if not self.selected and self.candidates:
             self.selected = list(self.candidates)
-        self.cursor = min(self.cursor, max(len(self.candidates) - 1, 0))
+        self.cursor = min(self.cursor, max(len(self.filtered_candidates()) - 1, 0))
         self.scroll = min(self.scroll, self.cursor)
         self.persist()
         self.message = "refreshed"
 
     def toggle_current(self):
-        if not self.candidates:
+        visible_candidates = self.filtered_candidates()
+        if not visible_candidates:
             return
-        current = self.candidates[self.cursor]
+        current = visible_candidates[self.cursor]
         if current in self.selected:
             self.selected = [item for item in self.selected if item != current]
         else:
@@ -343,52 +356,82 @@ class SelectorApp:
         self.persist()
 
     def select_all(self):
-        self.selected = list(self.candidates)
+        visible_candidates = self.filtered_candidates()
+        selected_lookup = set(self.selected)
+        for item in visible_candidates:
+            if item not in selected_lookup:
+                self.selected.append(item)
         self.persist()
-        self.message = "selected all"
+        self.message = "selected visible"
 
     def select_none(self):
-        self.selected = []
+        visible_candidates = set(self.filtered_candidates())
+        self.selected = [item for item in self.selected if item not in visible_candidates]
         self.persist()
-        self.message = "cleared selection"
+        self.message = "cleared visible"
 
     def move(self, delta):
-        if not self.candidates:
+        visible_candidates = self.filtered_candidates()
+        if not visible_candidates:
             return
-        self.cursor = max(0, min(len(self.candidates) - 1, self.cursor + delta))
+        self.cursor = max(0, min(len(visible_candidates) - 1, self.cursor + delta))
 
-    def ensure_visible(self, height):
+    def ensure_visible(self, height, item_count):
         if self.cursor < self.scroll:
             self.scroll = self.cursor
         if self.cursor >= self.scroll + height:
             self.scroll = self.cursor - height + 1
+        if item_count == 0:
+            self.scroll = 0
+
+    def append_query(self, char):
+        self.query += char
+        self.reset_view()
+
+    def pop_query(self):
+        if not self.query:
+            return
+        self.query = self.query[:-1]
+        self.reset_view()
+
+    def clear_query(self):
+        if not self.query:
+            return
+        self.query = ""
+        self.reset_view()
 
     def draw(self, stdscr):
         stdscr.erase()
         height, width = stdscr.getmaxyx()
         selected_count = len(self.selected)
         header = f"gdi  repo: {self.repo_root.name}  selected: {selected_count}/{len(self.candidates)}"
-        keys = "j/k or arrows move | space toggle | a all | n none | r refresh | q quit"
+        keys = "/ search | j/k move | space toggle | a/n visible | r refresh | esc clear/quit"
         context_label = "git default" if self.context_lines is None else str(self.context_lines)
         view_line = f"right pane: `nvim -R $(gdi path)` or `gdi view`  context: {context_label}"
+        search_label = " [search]" if self.search_mode else ""
+        filter_line = f"filter{search_label}: {self.query}"
+        visible_candidates = self.filtered_candidates()
 
         stdscr.addnstr(0, 0, header, width - 1, curses.A_BOLD)
         stdscr.addnstr(1, 0, keys, width - 1)
         stdscr.addnstr(2, 0, view_line, width - 1)
+        stdscr.addnstr(3, 0, filter_line, width - 1)
 
         if self.warnings:
-            stdscr.addnstr(3, 0, self.warnings[0], width - 1, curses.A_DIM)
-            list_top = 5
+            stdscr.addnstr(4, 0, self.warnings[0], width - 1, curses.A_DIM)
+            list_top = 6
         else:
-            list_top = 4
+            list_top = 5
 
         available = max(height - list_top - 1, 1)
-        self.ensure_visible(available)
+        self.ensure_visible(available, len(visible_candidates))
 
         if not self.candidates:
             stdscr.addnstr(list_top, 0, "No candidate files found.", width - 1)
+        elif not visible_candidates:
+            stdscr.addnstr(list_top, 0, "No files match the current filter.", width - 1)
         else:
-            visible = self.candidates[self.scroll : self.scroll + available]
+            visible = visible_candidates[self.scroll : self.scroll + available]
             selected_lookup = set(self.selected)
             for row, file_path in enumerate(visible, start=list_top):
                 index = self.scroll + (row - list_top)
@@ -411,8 +454,28 @@ class SelectorApp:
             key = stdscr.getch()
             self.message = ""
 
-            if key in (ord("q"), 27):
+            if self.search_mode:
+                if key == 27:
+                    if self.query:
+                        self.clear_query()
+                    self.search_mode = False
+                elif key in (10, 13):
+                    self.search_mode = False
+                elif key in (curses.KEY_BACKSPACE, 127, 8):
+                    self.pop_query()
+                elif 32 <= key <= 126:
+                    self.append_query(chr(key))
+                continue
+
+            if key == 27:
+                if self.query:
+                    self.clear_query()
+                else:
+                    return
+            elif key == ord("q"):
                 return
+            elif key == ord("/"):
+                self.search_mode = True
             if key in (curses.KEY_UP, ord("k")):
                 self.move(-1)
             elif key in (curses.KEY_DOWN, ord("j")):
@@ -439,19 +502,22 @@ def command_view(args):
     state_path, _ = ensure_state_paths(repo_root)
     last_output = None
 
-    while True:
-        output = build_view_output(repo_root, state_path, args.unified_context)
-        if output != last_output:
-            sys.stdout.write("\x1b[2J\x1b[H")
-            sys.stdout.write(output)
-            if not output.endswith("\n"):
-                sys.stdout.write("\n")
-            sys.stdout.flush()
-            last_output = output
+    try:
+        while True:
+            output = build_view_output(repo_root, state_path, args.unified_context)
+            if output != last_output:
+                sys.stdout.write("\x1b[H\x1b[2J\x1b[3J")
+                sys.stdout.write(output)
+                if not output.endswith("\n"):
+                    sys.stdout.write("\n")
+                sys.stdout.flush()
+                last_output = output
 
-        if args.once:
-            return
-        time.sleep(args.interval)
+            if args.once:
+                return
+            time.sleep(args.interval)
+    finally:
+        pass
 
 
 def command_path(_args):
