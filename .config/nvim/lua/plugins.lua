@@ -239,6 +239,13 @@ return {
         ensure_installed = vim.tbl_keys(mason_servers),
       })
 
+      -- Hard-disable GitLab Duo so it never auto-attaches or gets started by mistake.
+      vim.lsp.config("gitlab_duo", {
+        filetypes = {},
+        root_dir = function() end,
+      })
+      vim.lsp.enable("gitlab_duo", false)
+
       for server, config in pairs(vim.tbl_extend("force", mason_servers, system_servers)) do
         vim.lsp.config(server, config)
         vim.lsp.enable(server)
