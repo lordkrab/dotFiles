@@ -555,7 +555,7 @@ unset _env_file _env_files
 x=$(echo $PATH | tr ":" "\n" | sort | uniq | tr "\n" ":")
 export PATH="${x::-1}"
 # Ruby needs to go at the start so that it beats the system default ruby
-export PATH="/usr/local/opt/ruby/bin:$PATH"
+export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
 # Python needs to go at the start so that it beats the system default ruby
 export PATH="/opt/homebrew/bin/python3:$PATH"
 alias python3="/opt/homebrew/bin/python3"

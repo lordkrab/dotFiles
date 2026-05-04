@@ -62,11 +62,17 @@ hyper - x : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Passw
     skhd -k 'cmd - h'; \
   fi
 
-hyper - c : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Calendar" ]; then \
-    open -a /System/Applications/Calendar.app; \
+hyper - c : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Codex" ]; then \
+    open -a /Applications/Codex.app; \
   else \
     skhd -k 'cmd - h'; \
   fi
+
+# hyper - c : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Calendar" ]; then \
+#     open -a /System/Applications/Calendar.app; \
+#   else \
+#     skhd -k 'cmd - h'; \
+#   fi
 
 hyper - n : if [ "$(yabai -m query --windows --window | jq -r '.app')" != "Messages" ]; then \
     open -a messages; \
