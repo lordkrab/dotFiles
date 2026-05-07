@@ -1,10 +1,12 @@
-model = "gpt-5.4"
+model = "gpt-5.5"
 personality = "pragmatic"
-model_reasoning_effort = "medium"
+model_reasoning_effort = "xhigh"
 plan_mode_reasoning_effort = "high"
-service_tier = "fast"
 approval_policy = "on-request"
-sandbox_mode = "read-only"
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+writable_roots = ["/tmp", "/private/tmp", "/var/folders", "/Users/jakobberg/Library/Caches/go-build", "/Users/jakobberg/Library/Caches/gopls"]
 
 [projects."/Users/jakobberg/workplace/pos-monolith"]
 trust_level = "trusted"
@@ -15,11 +17,73 @@ trust_level = "trusted"
 [projects."/Users/jakobberg/dotFiles"]
 trust_level = "trusted"
 
+[projects."/Users/jakobberg/workplace/leetcode"]
+trust_level = "trusted"
+
 [notice]
 hide_rate_limit_model_nudge = true
+fast_default_opt_out = true
 
 [notice.model_migrations]
 gpt-5-codex = "gpt-5.3-codex"
 
 [tui]
 status_line = ["model-with-reasoning", "context-remaining", "current-dir"]
+notifications = true
+notification_method = "auto"
+notification_condition = "always"
+
+[tui.model_availability_nux]
+"gpt-5.5" = 4
+
+[tui.keymap.chat]
+
+[mcp_servers.dart]
+command = "dart"
+args = ["mcp-server", "--force-roots-fallback"]
+
+[mcp_servers.dart.tools.dart_format]
+approval_mode = "approve"
+
+[mcp_servers.dart.tools.add_roots]
+approval_mode = "approve"
+
+[mcp_servers.dart.tools.list_running_apps]
+approval_mode = "approve"
+
+[mcp_servers.dart.tools.hot_reload]
+approval_mode = "approve"
+
+[marketplaces.openai-bundled]
+last_updated = "2026-05-05T19:36:51Z"
+source_type = "local"
+source = "/Users/jakobberg/.codex/.tmp/bundled-marketplaces/openai-bundled"
+
+[marketplaces.openai-primary-runtime]
+last_updated = "2026-05-05T20:11:37Z"
+source_type = "local"
+source = "/Users/jakobberg/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
+
+[plugins."documents@openai-primary-runtime"]
+enabled = true
+
+[plugins."spreadsheets@openai-primary-runtime"]
+enabled = true
+
+[plugins."presentations@openai-primary-runtime"]
+enabled = true
+
+[plugins."browser-use@openai-bundled"]
+enabled = true
+
+[features]
+codex_hooks = true
+memories = true
+terminal_resize_reflow = true
+external_migration = true
+
+[[hooks.PermissionRequest]]
+[[hooks.PermissionRequest.hooks]]
+type = "command"
+command = "/usr/bin/afplay /System/Library/Sounds/Glass.aiff"
+timeout = 5
