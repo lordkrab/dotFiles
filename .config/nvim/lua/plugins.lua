@@ -165,6 +165,13 @@ return {
         topdelete = { text = "_" },
         changedelete = { text = "~" },
       },
+      signs_staged = {
+        add = { text = "|" },
+        change = { text = "|" },
+        delete = { text = "_" },
+        topdelete = { text = "_" },
+        changedelete = { text = "~" },
+      },
       on_attach = function(bufnr)
         local gs = package.loaded.gitsigns
         local map = function(mode, lhs, rhs, desc)
@@ -172,12 +179,14 @@ return {
         end
 
         map("n", "]h", function()
-          gs.nav_hunk("next")
+          gs.nav_hunk("next", { target = "all" })
         end, "Next git hunk")
         map("n", "[h", function()
-          gs.nav_hunk("prev")
+          gs.nav_hunk("prev", { target = "all" })
         end, "Previous git hunk")
-        map("n", "<leader>hd", "<cmd>Gitsigns diffthis<cr>", "Diff current file")
+        map("n", "<leader>hd", function()
+          gs.diffthis("HEAD")
+        end, "Diff current file")
         map("n", "<leader>hD", function()
           vim.cmd.normal({ "zR", bang = true })
         end, "Open all folds")
